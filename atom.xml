@@ -1,0 +1,722 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <id>https://wangzhichao1990.github.io</id>
+    <title>超哥的博客</title>
+    <updated>2023-02-25T02:46:22.488Z</updated>
+    <generator>https://github.com/jpmonette/feed</generator>
+    <link rel="alternate" href="https://wangzhichao1990.github.io"/>
+    <link rel="self" href="https://wangzhichao1990.github.io/atom.xml"/>
+    <subtitle>欢迎来到我的小站呀，很高兴遇见你！❤️❤️❤️</subtitle>
+    <logo>https://wangzhichao1990.github.io/images/avatar.png</logo>
+    <icon>https://wangzhichao1990.github.io/favicon.ico</icon>
+    <rights>All rights reserved 2023, 超哥的博客</rights>
+    <entry>
+        <title type="html"><![CDATA[Shell脚本也可以有图形界面对话框]]></title>
+        <id>https://wangzhichao1990.github.io/post/shell-jiao-ben-ye-ke-yi-you-tu-xing-jie-mian-dui-hua-kuang/</id>
+        <link href="https://wangzhichao1990.github.io/post/shell-jiao-ben-ye-ke-yi-you-tu-xing-jie-mian-dui-hua-kuang/">
+        </link>
+        <updated>2023-02-25T02:41:29.000Z</updated>
+        <content type="html"><![CDATA[<p><a href="https://help.gnome.org/users/zenity/stable/index.html.zh_CN">Zenity</a>和<a href="https://develop.kde.org/deploy/kdialog/">kdialog</a>分别是Gnome和KDE为shell脚本提供的简单对话框，可以容易地使用sehll脚本创建简单的GUI交互界面。</p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[Seurat - 聚类指导教程]]></title>
+        <id>https://wangzhichao1990.github.io/post/seurat-ju-lei-zhi-dao-jiao-cheng/</id>
+        <link href="https://wangzhichao1990.github.io/post/seurat-ju-lei-zhi-dao-jiao-cheng/">
+        </link>
+        <updated>2023-02-22T05:27:01.000Z</updated>
+        <content type="html"><![CDATA[<h1 id="seurat-聚类指导教程">Seurat - 聚类指导教程</h1>
+<h2 id="生成seurat对象">生成Seurat对象</h2>
+<p>在本教程中，我们将要分析10×Genomics免费提供的外周血单核细胞（PBMC）数据集，该数据集包含在Illumina NextSeq 500 系统上测序的2700个细胞的数据。原始数据可以在<a href="https://cf.10xgenomics.com/samples/cell/pbmc3k/pbmc3k_filtered_gene_bc_matrices.tar.gz">这里</a>找到。</p>
+<p>我们从读取数据开始。<a href="https://satijalab.org/seurat/reference/Read10X.html">Read10X()</a>函数读取来自10×Genomics cellranger管道的输出文件，并返回一个UMI计数矩阵。里面的数值代表在每个细胞（列）检测到的每个特征（例如基因；行）的分子数。</p>
+<p>接下来，我们使用计数矩阵创建一个Seurat对象，该对象充当一个容器，里面包含单细胞测序数据集（例如上述的计数矩阵）和分析结果（例如PCA或者聚类结果）。有关Seurat对象结构的技术讨论，请查看我们的<a href="https://github.com/satijalab/seurat/wiki">GitHub Wiki</a>。例如，上述的计数矩阵存储在<code>pbmc[[&quot;RNA&quot;]]@counts</code>。</p>
+<pre><code class="language-R">library(dplyr)
+library(Seurat)
+library(patchwork)
+
+# 加载 PBMC 数据集
+pbmc.data &lt;- Read10X(data.dir = &quot;../data/pbmc3k/filtered_gene_bc_matrices/hg19/&quot;)
+# 用原始数据(非标准化数据)创建Seurat对象
+pbmc &lt;- CreateSeuratObject(counts = pbmc.data, project = &quot;pbmc3k&quot;, min.cells = 3, min.features = 200)
+pbmc
+</code></pre>
+<p>计数矩阵中的数据是什么样子的？</p>
+<pre><code># 查看前两个细胞的和三个基因的数据
+# 列表是barcode，代表一个个细胞
+# 行名是基因
+# 以稀疏矩阵的格式存储，节省内存，.代表0
+pbmc.data[c(&quot;CD3D&quot;, &quot;TCL1A&quot;, &quot;MS4A1&quot;), 1:2]
+</code></pre>
+<figure data-type="image" tabindex="1"><img src="https://wangzhichao1990.github.io/post-images/1677043922970.png" alt="" loading="lazy"></figure>
+<p>矩阵中的<code>.</code>代表0，即未检测到分子。由于单细胞测序矩阵中的值大多是0，Seurat尽可能使用稀疏矩阵表示它们。这将显著节省Drop-seq/inDrop/10x数据的内存，提高分析速度。</p>
+<pre><code class="language-R"># 将数据转换为普通的举证格式并求所用的内存大小
+dense.size &lt;- object.size(as.matrix(pbmc.data))
+dense.size
+# 相同数据的稀疏矩阵的内存大小
+sparse.size &lt;- object.size(pbmc.data)
+sparse.size
+dense.size/sparse.size
+</code></pre>
+<figure data-type="image" tabindex="2"><img src="https://wangzhichao1990.github.io/post-images/1677043998267.png" alt="" loading="lazy"></figure>
+<p>内存节省了23.7倍。</p>
+<h2 id="标准预处理流程">标准预处理流程</h2>
+<p>以下的步骤包含Seurat单细胞测序数据的标准预处理流程，包括基于QC度量的细胞选择和过滤、数据标准化和缩放和高可变特征的检测（即特征选择）。</p>
+<h2 id="qc和选择下一步分析的细胞">QC和选择下一步分析的细胞</h2>
+<p>Seurat允许你根据任何用户自定义的标准轻松探索质量控制标准和过滤细胞。社区常用的几个质量控制指标包括：</p>
+<ul>
+<li>每个细胞中检测到的独特基因的数量
+<ul>
+<li>低质量的细胞或者空液滴通常具有很少的基因</li>
+<li>细胞双倍体和多倍体可能表现出异常高的基因计数</li>
+</ul>
+</li>
+<li>同样的，细胞内检测到的分子总数(与独特基因数强相关)</li>
+<li>比对到线粒体基因组的read比例
+<ul>
+<li>低质量或者垂死的细胞通常表现出广泛的线粒体污染</li>
+<li>我们使用<a href="https://satijalab.org/seurat/reference/PercentageFeatureSet.html"><code>PercentageFeatureSet()</code></a>函数计算线粒体质控指标，该函数计算源自一组特征的计数的百分比。</li>
+<li>我们使用所有的以<code>MT-</code>开头的基因作为线粒体基因的集合。</li>
+</ul>
+</li>
+</ul>
+<pre><code class="language-R"># [[操作符可以将列添加到对象元数据中, 这是存储QC统计数据的好地方
+pbmc[[&quot;percent.mt&quot;]] &lt;- PercentageFeatureSet(pbmc, pattern = &quot;^MT-&quot;)
+</code></pre>
+<p><strong>Seurat中的QC指标保存在哪？</strong></p>
+<ul>
+<li>在使用<code>CreateSeuratObject()</code>创建Seurat对象过程中自动计算了独特基因和总的分子的个数
+<ul>
+<li>你可以在该对象的meta data中找到它们。</li>
+</ul>
+</li>
+</ul>
+<pre><code class="language-R"># 显示前5个细胞的QC度量
+head(pbmc@meta.data, 5)
+</code></pre>
+<figure data-type="image" tabindex="3"><img src="https://wangzhichao1990.github.io/post-images/1677044035166.png" alt="" loading="lazy"></figure>
+<p>在下面的例子中，我们可视化了QC度量，并用它们过滤细胞。</p>
+<ul>
+<li>我们过滤掉独特特征少于200和多于2500的细胞</li>
+<li>我们过滤掉线粒体计数比例大于5%的细胞</li>
+</ul>
+<pre><code class="language-R"># 使用小提琴图可视化QC度量
+# 根据数据分布选择合适的阈值过滤细胞
+VlnPlot(pbmc, features = c(&quot;nFeature_RNA&quot;, &quot;nCount_RNA&quot;, &quot;percent.mt&quot;), ncol = 3)
+</code></pre>
+<figure data-type="image" tabindex="4"><img src="https://wangzhichao1990.github.io/post-images/1677044068296.png" alt="" loading="lazy"></figure>
+<pre><code class="language-R"># FeatureScatter通常用于可视化特征-特征关系, 但也可以用来可视化元数据中的列或者PCA分析中的PC
+plot1 &lt;- FeatureScatter(pbmc, feature1 = &quot;nCount_RNA&quot;, feature2 = &quot;percent.mt&quot;)
+plot2 &lt;- FeatureScatter(pbmc, feature1 = &quot;nCount_RNA&quot;, feature2 = &quot;nFeature_RNA&quot;)
+plot1 + plot2
+</code></pre>
+<figure data-type="image" tabindex="5"><img src="https://wangzhichao1990.github.io/post-images/1677044105814.png" alt="" loading="lazy"></figure>
+<pre><code class="language-R"># SUbset过滤细胞
+pbmc &lt;- subset(pbmc, subset = nFeature_RNA &gt; 200 &amp; nFeature_RNA &lt; 2500 &amp; percent.mt &lt; 5)
+</code></pre>
+<h2 id="标准化数据">标准化数据</h2>
+<p>在去除不需要的细胞后，下一步就是标准化数据。默认情况下，我们使用全局缩放标准化方法（LogNormalize），该方法使用总表达量归一化每个细胞的特征的表达量，然后乘以缩放因子（默认是10,000），最后做对数变换。标准化的值存储在``pbmc[[&quot;RNA&quot;]]@data`。</p>
+<pre><code class="language-R">pbmc &lt;- NormalizeData(pbmc, normalization.method = &quot;LogNormalize&quot;, scale.factor = 10000)
+</code></pre>
+<p>为了清楚起见，在先前的代码(和以后的代码)中，我们为特定的参数提供了默认值。但是，这不是必需的，可以通过以下的方式实现相同的行为：</p>
+<pre><code class="language-R">pbmc &lt;- NormalizeData(pbmc)
+</code></pre>
+<figure data-type="image" tabindex="6"><img src="https://wangzhichao1990.github.io/post-images/1677044144361.png" alt="" loading="lazy"></figure>
+<h2 id="鉴定高可变特征特征选择">鉴定高可变特征（特征选择）</h2>
+<p>接下来，我们计算出数据集中表现出搞细胞间变异（即在某些细胞中高表达，而在其他细胞中低表达）的特征子集。我们和<a href="https://www.nature.com/articles/nmeth.2645">其他人</a>发现，在下游分析中关注这些基因有助于突出单细胞数据集中的生物信号。</p>
+<p>在Seurat中的这个筛选过程在<a href="https://doi.org/10.1016/j.cell.2019.05.031">这有详细的描述</a>，并且通过直接对单细胞数据国有的平均值-方差关系建模改进了先前的版本，并在<a href="https://satijalab.org/seurat/reference/FindVariableFeatures.html"><code>FindVariableFeatures()</code></a>函数中实现了相关功能。默认的，我们为每个数据集返回2000个特征。这些特征将会在进一步分析中用到，例如PCA。</p>
+<pre><code class="language-R">pbmc &lt;- FindVariableFeatures(pbmc, selection.method = &quot;vst&quot;, nfeatures = 2000)
+
+# 鉴定前10个最高度可变基因
+top10 &lt;- head(VariableFeatures(pbmc), 10)
+
+# plot variable features with and without labels
+plot1 &lt;- VariableFeaturePlot(pbmc)
+plot2 &lt;- LabelPoints(plot = plot1, points = top10, repel = TRUE)
+plot1 + plot2
+</code></pre>
+<p><img src="https://wangzhichao1990.github.io/post-images/1677044184343.png" alt="" loading="lazy"><br>
+<img src="https://wangzhichao1990.github.io/post-images/1677044245910.png" alt="" loading="lazy"></p>
+<h2 id="缩放数据">缩放数据</h2>
+<p>接下来，我们应用线性变换（“缩放”），这是PCA等降维技术之前的标准化预处理步骤。<code>ScaleData()</code>函数：</p>
+<ul>
+<li>改变每个基因的表达，使细胞间的平均表达为0</li>
+<li>缩放每个基因的表达，使细胞间的方差为1
+<ul>
+<li>这一步骤在下游分析中给予了特征同等的权重，因此高表达基因不会占主导地位</li>
+</ul>
+</li>
+<li>结果存储在<code>pbmc[[&quot;RNA&quot;]]@scale.data</code></li>
+</ul>
+<pre><code class="language-R">all.genes &lt;- rownames(pbmc)
+pbmc &lt;- ScaleData(pbmc, features = all.genes)
+</code></pre>
+<p><strong>这一步太费时了！我能让它更快点吗？</strong></p>
+<p>在Seurat流程中，缩放是一个至关重要的步骤，但是只用对下一步PCA要用的基因进行缩放。因此，<code>ScaleData()</code>函数默认只对先前识别的特征执行缩放（默认值是前面的2000个基因）。为此，请省略上一个函数调用中的feature的参数，即：</p>
+<pre><code class="language-R">pbmc &lt;- ScaleData(pbmc)
+</code></pre>
+<p>你的PCA和聚类结果将不受影响。然而Seurat热图（使用<code>DoHeatmap()</code>生成的展示在下文中）需要对热图中的基因进行缩放，以确保高表达的基因不会主导热图。为了确保我们不会遗漏对热图中基因的缩放，我们在这个教程缩放所有的基因。</p>
+<p><strong>就像Seurat v2中那样，如何删除不需要的变异源？</strong></p>
+<p>在版本2中，我们也使用<code>ScaleData()</code>函数来删除单细胞数据集中不需要的变异源。例如，我们可以删除与细胞周期阶段或线粒体污染相关的异质性。这些功能在版本3中仍然支持，例如：</p>
+<pre><code class="language-R">pbmc &lt;- ScaleData(pbmc, vars.to.regress = &quot;percent.mt&quot;)
+</code></pre>
+<p>然而，特别是对于希望使用此功能的高级用户，我们强烈建议使用我们的新的规范化流程，<code> SCTransform()</code>。这个方法在我们的<a href="https://genomebiology.biomedcentral.com/articles/10.1186/s13059-019-1874-1">论文</a>中进行了描述，并在Seurat v3中有一个单独的<a href="https://satijalab.org/seurat/articles/sctransform_vignette.html">小教程</a>。和<code> ScaleData()</code>一样，<code>SCTransform()</code>函数也包含一个<code>vars.to.regress</code>参数。</p>
+<h2 id="执行线性降维">执行线性降维</h2>
+<p>接下来，我们对缩放的数据执行PCA。默认情况下，仅使用先前确定的变量特征作为输入，但是如果你希望选择不同的子集，则可以使用feature参数进行定义。</p>
+<pre><code class="language-R">pbmc &lt;- RunPCA(pbmc, features = VariableFeatures(object = pbmc))
+</code></pre>
+<figure data-type="image" tabindex="7"><img src="https://wangzhichao1990.github.io/post-images/1677044281593.png" alt="" loading="lazy"></figure>
+<p>Seurat提供了一系列有用的方法来可视化定义PCA的细胞和特征，包括<code>VizDimReduction()</code>， <code>DimPlot()</code> 和<code>DimHeatmap()</code>。</p>
+<pre><code class="language-R"># 使用不同的方法检查和可视化PCA结果
+print(pbmc[[&quot;pca&quot;]], dims = 1:5, nfeatures = 5)
+</code></pre>
+<figure data-type="image" tabindex="8"><img src="https://wangzhichao1990.github.io/post-images/1677044311973.png" alt="" loading="lazy"></figure>
+<pre><code class="language-R">VizDimLoadings(pbmc, dims = 1:2, reduction = &quot;pca&quot;)
+</code></pre>
+<figure data-type="image" tabindex="9"><img src="https://wangzhichao1990.github.io/post-images/1677044351133.png" alt="" loading="lazy"></figure>
+<pre><code class="language-R">DimPlot(pbmc, reduction = &quot;pca&quot;)
+</code></pre>
+<figure data-type="image" tabindex="10"><img src="https://wangzhichao1990.github.io/post-images/1677044372086.png" alt="" loading="lazy"></figure>
+<p>特别是DimHeatmap（）允许轻松探索数据集中的主要异质性来源，并且在试图决定包括哪些PC进行进一步的下游分析时非常有用。细胞和特征都是根据PCA得分排序的。将单元格设置为一个数字将绘制光谱两端的“极端”单元格，这大大加快了大型数据集的绘制速度。虽然这显然是一个有监督的分析，但我们发现这是探索相关特征集的一个有价值的工具。</p>
+<pre><code class="language-R">DimHeatmap(pbmc, dims = 1, cells = 500, balanced = TRUE)
+</code></pre>
+<figure data-type="image" tabindex="11"><img src="https://wangzhichao1990.github.io/post-images/1677044400600.png" alt="" loading="lazy"></figure>
+<pre><code class="language-R">DimHeatmap(pbmc, dims = 1:15, cells = 500, balanced = TRUE)
+</code></pre>
+<figure data-type="image" tabindex="12"><img src="https://wangzhichao1990.github.io/post-images/1677044420532.png" alt="" loading="lazy"></figure>
+<h2 id="确定数据集的维度">确定数据集的维度</h2>
+<p>为了克服scRNA-seq数据的任何单一特征中的广泛技术噪声，Seurat基于其PCA得分对细胞进行聚类，每个PC基本上表示一个“元特征”，该特征组合了相关特征集的信息。因此，顶部主要成分代表数据集的稳健压缩。然而，我们应该选择包含多少组件？10? 20? 100?</p>
+<p>在<a href="http://www.cell.com/abstract/S0092-8674(15)00549-8">Macosko <em>et al</em></a>中，我们实施了受JackStraw程序启发的重新采样测试。我们随机排列数据的一个子集（默认为1%），然后重新运行PCA，构建特征分数的“空分布”，并重复此过程。我们将显著的PC定义为那些具有丰富的低p值特征的PC。</p>
+<pre><code class="language-R"># NOTE: This process can take a long time for big datasets, comment out for expediency. More
+# approximate techniques such as those implemented in ElbowPlot() can be used to reduce
+# computation time
+# 注意：对于大数据来说这个步骤非常耗时，为方便起见请注释掉。
+# 可以使用诸如ElbowPlot（）中实现的更近似的技术来减少计算时间
+pbmc &lt;- JackStraw(pbmc, num.replicate = 100)
+pbmc &lt;- ScoreJackStraw(pbmc, dims = 1:20)
+</code></pre>
+<p><code>JackStrawPlot()</code>函数提供了一个可视化工具，用于将每个PC的p值分布与均匀分布（虚线）进行比较。显著的“PC”将显示出具有低p值（虚线上方的实线）的特征的强烈富集。在这种情况下，在前10-12台PC之后，其重要性似乎急剧下降。</p>
+<pre><code class="language-R">JackStrawPlot(pbmc, dims = 1:15)
+</code></pre>
+<figure data-type="image" tabindex="13"><img src="https://wangzhichao1990.github.io/post-images/1677044445018.png" alt="" loading="lazy"></figure>
+<p>另一种启发式方法生成一个“肘形图”：根据每个主成分解释的方差百分比对主成分进行排序（<code>ElbowPlot()</code>函数）。在本例中，我们可以观察到PC9-10周围的“肘部”，这表明大多数真实信号都是在前10个PC中捕获的。</p>
+<pre><code class="language-R">ElbowPlot(pbmc)
+</code></pre>
+<figure data-type="image" tabindex="14"><img src="https://wangzhichao1990.github.io/post-images/1677044464812.png" alt="" loading="lazy"></figure>
+<p>我们在这里选择了前10 PC，但鼓励用户考虑以下几点：</p>
+<ul>
+<li>
+<p>树突状细胞和NK爱好者可能认识到，与PC 12和13密切相关的基因定义了罕见的免疫亚群（即MZB1是浆细胞样DC的标志物）。然而，这些组是如此罕见，在没有先验知识的情况下，很难将其与这种大小的数据集的背景噪声区分开来。</p>
+</li>
+<li>
+<p>我们鼓励用户使用不同数量的PC（10、15，甚至50个！）重复下游分析。正如您将观察到的，结果通常没有显著差异。</p>
+</li>
+<li>
+<p>我们建议用户在选择此参数时，不要过于乐观。例如，仅使用5个PC进行下游分析会对结果产生重大不利影响。</p>
+</li>
+</ul>
+<h2 id="聚类细胞">聚类细胞</h2>
+<p>Seurat v3 应用了基于图的聚类方法，建立在 （<a href="http://www.cell.com/abstract/S0092-8674(15)00549-8">Macosko <em>et al）</em></a> 中的初始策略之上。重要的是，驱动聚类分析的距离<em>指标</em>（基于先前确定的 PC）保持不变。然而，我们将蜂窝距离矩阵划分为簇的方法已经有了显着的改进。我们的方法在很大程度上受到最近手稿的启发，这些手稿将基于图的聚类方法应用于scRNA-seq数据[<a href="http://bioinformatics.oxfordjournals.org/content/early/2015/02/10/bioinformatics.btv088.abstract">SNN-Cliq，Xu和Su，Bioinformatics</a>，2015]和CyTOF数据[<a href="http://www.ncbi.nlm.nih.gov/pubmed/26095251">PhenoGraph，Levine<em>等人</em>，Cell，2015]。</a>简而言之，这些方法将单元格嵌入到图形结构中 - 例如K-最近邻（KNN）图，在具有相似特征表达模式的细胞之间绘制边缘，然后尝试将此图划分为高度互连的“准集团”或“社区”。</p>
+<p>如同在PhenoGraph中一样，我们首先基于PCA空间中的欧氏距离构建KNN图，并基于任意两个细胞的局部邻域中的共享重叠（Jaccard相似性）来细化任意两个细胞之间的边缘权重。此步骤使用<code>FindNeighbors()</code>函数执行，并将先前定义的数据集维度（前10个PC）作为输入。</p>
+<p>为了对细胞进行聚类，我们接下来应用模块化优化技术，例如Louvain算法（默认）或SLM [<a href="http://dx.doi.org/10.1088/1742-5468/2008/10/P10008">SLM, Blondel <em>et al</em>., Journal of Statistical Mechanics]</a>，以迭代方式将细胞分组在一起，以优化标准模块化功能。<code>FindClusters()</code>函数实现了此过程，并包含一个解析参数，用于设置下游集群的“粒度”，值的增加会导致更多的集群。我们发现，将该参数设置在0.4-1.2之间通常会为约3K个细胞的单细胞数据集返回良好的结果。对于较大的数据集，最佳分辨率通常会增加。可以使用<code>Idents()</code>函数找到集群。</p>
+<pre><code class="language-R">pbmc &lt;- FindNeighbors(pbmc, dims = 1:10)
+pbmc &lt;- FindClusters(pbmc, resolution = 0.5)
+</code></pre>
+<figure data-type="image" tabindex="15"><img src="https://wangzhichao1990.github.io/post-images/1677044502931.png" alt="" loading="lazy"></figure>
+<pre><code class="language-R"># 查看前5个细胞的聚类群ID
+head(Idents(pbmc), 5)
+</code></pre>
+<h2 id="执行非线性降维umaptsne">执行非线性降维（UMAP/tSNE）</h2>
+<p>Seurat提供了几种非线性降维技术，如tSNE和UMAP，以可视化和探索这些数据集。这些算法的目标是学习数据的基本流形，以便在低维空间中将相似的单元放置在一起。上面确定的基于图的聚类内的细胞应该在这些降维图上共同定位。作为UMAP和tSNE的输入，我们建议使用相同的PC作为聚类分析的输入。</p>
+<pre><code class="language-R"># 如果你还没安装UMAP,你可以通过reticulate::py_install(packages ='umap-learn')安装
+pbmc &lt;- RunUMAP(pbmc, dims = 1:10)
+</code></pre>
+<pre><code class="language-R">#请注意，您可以设置“label=TRUE”或使用LabelClusters函数来帮助标记单个集群
+DimPlot(pbmc, reduction = &quot;umap&quot;)
+</code></pre>
+<figure data-type="image" tabindex="16"><img src="https://wangzhichao1990.github.io/post-images/1677044528514.png" alt="" loading="lazy"></figure>
+<pre><code class="language-R">LabelClusters(DimPlot(pbmc, reduction = &quot;umap&quot;), id = &quot;ident&quot;)
+</code></pre>
+<figure data-type="image" tabindex="17"><img src="https://wangzhichao1990.github.io/post-images/1677044549821.png" alt="" loading="lazy"></figure>
+<p>此时您可以保存对象，以便可以轻松地将其重新加载，而无需重新运行上面执行的计算密集型步骤，或者轻松地与合作者共享。</p>
+<pre><code class="language-R">saveRDS(pbmc, file = &quot;../output/pbmc_tutorial.rds&quot;)
+</code></pre>
+<h2 id="发现差异表达特征集群生物标志物">发现差异表达特征（集群生物标志物）</h2>
+<p>Seurat可以帮助您找到通过差异表达定义簇的标记。默认情况下，与所有其他单元格相比，它识别单个簇（在ident.1中指定）的正负标记。<code>FindAllMarkers()</code>为所有集群自动执行此过程，但您也可以测试集群组之间的相互比较，或针对所有细胞。</p>
+<p>min.pct参数要求在两组细胞中的任何一组细胞中以最小百分比检测特征，threshold.test参数要求在这两组细胞之间以一定数量差异表达（平均）特征。您可以将这两个值都设置为0，但时间会急剧增加，因为这将测试大量不太可能具有高度歧视性的特征。作为加速这些计算的另一个选项，可以设置max.cells.per.ident。这将对每个身份类进行降采样，使其细胞数量少于设置的值。虽然通常会出现功率损失，但速度的提高可能会非常显著，并且差异表达最强烈的特征可能仍然会上升到顶部。</p>
+<pre><code class="language-R"># 找出cluster 2的所有标记
+cluster2.markers &lt;- FindMarkers(pbmc, ident.1 = 2, min.pct = 0.25)
+head(cluster2.markers, n = 5)
+</code></pre>
+<figure data-type="image" tabindex="18"><img src="https://wangzhichao1990.github.io/post-images/1677044568710.png" alt="" loading="lazy"></figure>
+<pre><code class="language-R"># 找到区分cluster 5与 clusters 0 和 3的所有标记
+cluster5.markers &lt;- FindMarkers(pbmc, ident.1 = 5, ident.2 = c(0, 3), min.pct = 0.25)
+head(cluster5.markers, n = 5)
+</code></pre>
+<figure data-type="image" tabindex="19"><img src="https://wangzhichao1990.github.io/post-images/1677044589357.png" alt="" loading="lazy"></figure>
+<pre><code class="language-R"># 找到每个亚群和剩下所有细胞区分的标记，并且至报告阳性标记
+pbmc.markers &lt;- FindAllMarkers(pbmc, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+pbmc.markers %&gt;%
+    group_by(cluster) %&gt;%
+    slice_max(n = 2, order_by = avg_log2FC)
+</code></pre>
+<figure data-type="image" tabindex="20"><img src="https://wangzhichao1990.github.io/post-images/1677044609156.png" alt="" loading="lazy"></figure>
+<p>Seurat有几个可以用test.use参数设置的差异表达测试（详细信息请参阅我们的<a href="https://satijalab.org/seurat/articles/de_vignette.html">DE vignette</a>）。例如，ROC测试返回任何单个标记的“分类能力”（范围从0-随机到1-完美）。</p>
+<pre><code class="language-R">cluster0.markers &lt;- FindMarkers(pbmc, ident.1 = 0, logfc.threshold = 0.25, test.use = &quot;roc&quot;, only.pos = TRUE)
+</code></pre>
+<p>我们包括一些可视化标记表达的工具。<code>VlnPlot()</code>（显示簇之间的表达式概率分布）和<code>FeaturePlot()</code>（在tSNE或PCA图上可视化特征表达）是我们最常用的可视化。我们还建议探索<code>RidgePlot()</code>、<code>CellScatter()</code>和<code>DotPlot()</code>作为查看数据集的其他方法。</p>
+<pre><code class="language-R">VlnPlot(pbmc, features = c(&quot;MS4A1&quot;, &quot;CD79A&quot;))
+</code></pre>
+<figure data-type="image" tabindex="21"><img src="https://wangzhichao1990.github.io/post-images/1677044635161.png" alt="" loading="lazy"></figure>
+<pre><code class="language-R"># 也可以绘制原始计数
+VlnPlot(pbmc, features = c(&quot;NKG7&quot;, &quot;PF4&quot;), slot = &quot;counts&quot;, log = TRUE)
+</code></pre>
+<figure data-type="image" tabindex="22"><img src="https://wangzhichao1990.github.io/post-images/1677044652907.png" alt="" loading="lazy"></figure>
+<pre><code class="language-R">FeaturePlot(pbmc, features = c(&quot;MS4A1&quot;, &quot;GNLY&quot;, &quot;CD3E&quot;, &quot;CD14&quot;, &quot;FCER1A&quot;, &quot;FCGR3A&quot;, &quot;LYZ&quot;, &quot;PPBP&quot;,
+    &quot;CD8A&quot;))
+</code></pre>
+<figure data-type="image" tabindex="23"><img src="https://wangzhichao1990.github.io/post-images/1677044673886.png" alt="" loading="lazy"></figure>
+<p><code>DoHeatmap()</code>为给定的细胞和特征生成表达量heatmap。在本例中，我们绘制了每个集群的前10个标记（如果少于10个，则绘制所有标记）。</p>
+<pre><code class="language-R">pbmc.markers %&gt;%
+    group_by(cluster) %&gt;%
+    top_n(n = 10, wt = avg_log2FC) -&gt; top10
+DoHeatmap(pbmc, features = top10$gene) + NoLegend()
+</code></pre>
+<figure data-type="image" tabindex="24"><img src="https://wangzhichao1990.github.io/post-images/1677044691961.png" alt="" loading="lazy"></figure>
+<h2 id="为细胞亚群分配细胞类型标识">为细胞亚群分配细胞类型标识</h2>
+<p>幸运的是，在这个数据集的情况下，我们可以使用规范标记轻松地将无偏聚类与已知的细胞类型相匹配：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">Cluster ID</th>
+<th style="text-align:left">Markers</th>
+<th style="text-align:left">Cell Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">0</td>
+<td style="text-align:left">IL7R, CCR7</td>
+<td style="text-align:left">Naive CD4+ T</td>
+</tr>
+<tr>
+<td style="text-align:left">1</td>
+<td style="text-align:left">CD14, LYZ</td>
+<td style="text-align:left">CD14+ Mono</td>
+</tr>
+<tr>
+<td style="text-align:left">2</td>
+<td style="text-align:left">IL7R, S100A4</td>
+<td style="text-align:left">Memory CD4+</td>
+</tr>
+<tr>
+<td style="text-align:left">3</td>
+<td style="text-align:left">MS4A1</td>
+<td style="text-align:left">B</td>
+</tr>
+<tr>
+<td style="text-align:left">4</td>
+<td style="text-align:left">CD8A</td>
+<td style="text-align:left">CD8+ T</td>
+</tr>
+<tr>
+<td style="text-align:left">5</td>
+<td style="text-align:left">FCGR3A, MS4A7</td>
+<td style="text-align:left">FCGR3A+ Mono</td>
+</tr>
+<tr>
+<td style="text-align:left">6</td>
+<td style="text-align:left">GNLY, NKG7</td>
+<td style="text-align:left">NK</td>
+</tr>
+<tr>
+<td style="text-align:left">7</td>
+<td style="text-align:left">FCER1A, CST3</td>
+<td style="text-align:left">DC</td>
+</tr>
+<tr>
+<td style="text-align:left">8</td>
+<td style="text-align:left">PPBP</td>
+<td style="text-align:left">Platelet</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-R">new.cluster.ids &lt;- c(&quot;Naive CD4 T&quot;, &quot;CD14+ Mono&quot;, &quot;Memory CD4 T&quot;, &quot;B&quot;, &quot;CD8 T&quot;, &quot;FCGR3A+ Mono&quot;,
+    &quot;NK&quot;, &quot;DC&quot;, &quot;Platelet&quot;)
+names(new.cluster.ids) &lt;- levels(pbmc)
+pbmc &lt;- RenameIdents(pbmc, new.cluster.ids)
+DimPlot(pbmc, reduction = &quot;umap&quot;, label = TRUE, pt.size = 0.5) + NoLegend()
+</code></pre>
+<figure data-type="image" tabindex="25"><img src="https://wangzhichao1990.github.io/post-images/1677044708828.png" alt="" loading="lazy"></figure>
+<pre><code class="language-R"># 保存最后的结果
+saveRDS(pbmc, file = &quot;../output/pbmc3k_final.rds&quot;)
+</code></pre>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[R语言批量建模在差异基因/微生物/Feature分析中的应用]]></title>
+        <id>https://wangzhichao1990.github.io/post/r-yu-yan-pi-liang-jian-mo-zai-chai-yi-ji-yin-wei-sheng-wu-feature-fen-xi-zhong-de-ying-yong/</id>
+        <link href="https://wangzhichao1990.github.io/post/r-yu-yan-pi-liang-jian-mo-zai-chai-yi-ji-yin-wei-sheng-wu-feature-fen-xi-zhong-de-ying-yong/">
+        </link>
+        <updated>2023-02-15T08:31:14.000Z</updated>
+        <content type="html"><![CDATA[<pre><code class="language-{R}">library(tidyverse)
+# 生成数据和metadata
+# Feature可以是基因，微生物物种等任意可分组变量
+set.seed(123)
+data &lt;- matrix(runif(1000, 50, 100), nrow = 100) %&gt;%
+  as_tibble() %&gt;%
+  set_names(paste0(&quot;Sample&quot;, 1:10)) %&gt;%
+  mutate(Feature = paste0(&quot;Feature&quot;, 1:100)) %&gt;%
+  relocate(Feature, everything())
+
+metadata &lt;- data.frame(
+  SampleID = paste0(&quot;Sample&quot;, 1:10),
+  Group = rep(c(&quot;A&quot;, &quot;B&quot;), each = 5)
+)
+
+# 用于统计建模的整洁数据
+stats_data &lt;- data %&gt;%
+  pivot_longer(
+    -Feature,
+    names_to = &quot;SampleID&quot;,
+    values_to = &quot;value&quot;
+  ) %&gt;%
+  left_join(metadata)
+
+# 批量建模
+# 方法1：使用group_modify函数
+stats_res &lt;- stats_data %&gt;%
+  group_by(Feature) %&gt;%
+  group_modify(
+    ~ broom::tidy(
+      wilcox.test(
+        value ~ Group,
+        data = .x,
+        conf.int = TRUE
+      )
+    )
+  ) %&gt;%
+  ungroup() %&gt;%
+  filter(p.value &lt; 0.05)
+
+# 方法2：使用group_nest函数
+stats_res &lt;- stats_data %&gt;%
+  group_nest(Feature) %&gt;%
+  mutate(
+    stats = map(
+      data,
+      ~ broom::tidy(
+        wilcox.test(
+          value ~ Group,
+          data = .x,
+          conf.int = TRUE
+        )
+      )
+    )
+  ) %&gt;%
+  unnest(stats) %&gt;%
+  select(-data) %&gt;%
+  filter(p.value &lt; 0.05)
+
+# 方法3：使用nest_by
+stats_res &lt;- stats_data %&gt;%
+  nest_by(Feature) %&gt;%
+  mutate(
+    stats = broom::tidy(wilcox.test(
+      value ~ Group,
+      data = data, conf.int = TRUE
+    ))
+  ) %&gt;%
+  unnest(stats) %&gt;%
+  select(-data) %&gt;%
+  filter(p.value &lt; 0.05)
+</code></pre>
+<p>data: 原始数据，如基因表达矩阵，微生物丰度矩阵等等<br>
+<img src="https://wangzhichao1990.github.io/post-images/1676449999128.png" alt="" loading="lazy"></p>
+<p>metadata: 样本分组信息<br>
+<img src="https://wangzhichao1990.github.io/post-images/1676450022906.png" alt="" loading="lazy"></p>
+<p>stats_data: 用于批量建模的整洁数据<br>
+<img src="https://wangzhichao1990.github.io/post-images/1676450052504.png" alt="" loading="lazy"></p>
+<p>stats_res: 批量建模结果，差异Feature分析结果<br>
+<img src="https://wangzhichao1990.github.io/post-images/1676450091513.png" alt="" loading="lazy"></p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[两个特征矩阵变量关联分析/相关性分析]]></title>
+        <id>https://wangzhichao1990.github.io/post/liang-ge-te-zheng-ju-zhen-bian-liang-guan-lian-fen-xi-xiang-guan-xing-fen-xi/</id>
+        <link href="https://wangzhichao1990.github.io/post/liang-ge-te-zheng-ju-zhen-bian-liang-guan-lian-fen-xi-xiang-guan-xing-fen-xi/">
+        </link>
+        <updated>2023-02-14T12:48:31.000Z</updated>
+        <content type="html"><![CDATA[<pre><code class="language-{R}">library(tidyverse)
+library(pheatmap)
+# 生成两个特征矩阵
+set.seed(123)
+gene_matrix &lt;- matrix(runif(100, 50, 100), nrow = 10) %&gt;% as.data.frame()
+
+rownames(gene_matrix) &lt;- paste0(&quot;Sample&quot;, 1:10)
+colnames(gene_matrix) &lt;- paste0(&quot;Gene&quot;, 1:10)
+
+other_matrix &lt;- matrix(runif(50, 10, 20), nrow = 10) %&gt;% as.data.frame()
+rownames(other_matrix) &lt;- paste0(&quot;Sample&quot;, 1:10)
+
+
+# 根据p值生成显著性标记
+change2sigstar &lt;- function(x){
+  if (x &lt;= 0.001) {
+    &quot;***&quot; 
+  } else if (x &lt;= 0.05) {
+    &quot;*&quot;
+  } else {
+    &quot;&quot;
+  }
+}
+
+# 计算相关系数
+cor &lt;- cor(gene_matrix, other_matrix)
+
+# 相关性检验生成p值
+cor_pvalue &lt;- map_df(gene_matrix, ~ map_df(other_matrix, function(x) cor.test(.x, x) %&gt;% .$p.value )) %&gt;% as.data.frame()
+rownames(cor_pvalue) &lt;- colnames(gene_matrix)
+
+# 生成相关性标记矩阵
+cor_sigstar &lt;- cor_pvalue %&gt;% mutate(
+  across(everything(), ~ map_chr(.x, change2sigstar))
+)
+
+# 简单绘图
+pheatmap(cor, display_numbers = cor_sigstar, fontsize_number = 20, number_color = &quot;black&quot;)
+</code></pre>
+<p>gene_matix: 基因表达矩阵。<br>
+<img src="https://wangzhichao1990.github.io/post-images/1676379598148.png" alt="" loading="lazy"></p>
+<p>other_matrix: 可以是一些临川指标等等。<br>
+<img src="https://wangzhichao1990.github.io/post-images/1676379616313.png" alt="" loading="lazy"></p>
+<p>cor: 相关系数矩阵<br>
+<img src="https://wangzhichao1990.github.io/post-images/1676379755112.png" alt="" loading="lazy"></p>
+<p>cor_pvalue: 相关性检测p值矩阵<br>
+<img src="https://wangzhichao1990.github.io/post-images/1676379781603.png" alt="" loading="lazy"></p>
+<p>cor_sigstar: 相关性标记矩阵<br>
+<img src="https://wangzhichao1990.github.io/post-images/1676379831314.png" alt="" loading="lazy"></p>
+<p>相关性热图：<br>
+<img src="https://wangzhichao1990.github.io/post-images/1676379846341.png" alt="" loading="lazy"></p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[BioJava核心库中的序列相关类]]></title>
+        <id>https://wangzhichao1990.github.io/post/biojava-he-xin-ku-zhong-de-xu-lie-xiang-guan-lei/</id>
+        <link href="https://wangzhichao1990.github.io/post/biojava-he-xin-ku-zhong-de-xu-lie-xiang-guan-lei/">
+        </link>
+        <updated>2022-12-16T07:31:01.000Z</updated>
+        <content type="html"><![CDATA[<p><img src="https://wangzhichao1990.github.io/post-images/1671175897916.png" alt="" loading="lazy"><br>
+<img src="https://wangzhichao1990.github.io/post-images/1671176103684.png" alt="" loading="lazy"><br>
+<img src="https://wangzhichao1990.github.io/post-images/1671175908465.png" alt="" loading="lazy"><br>
+<img src="https://wangzhichao1990.github.io/post-images/1671175914817.png" alt="" loading="lazy"></p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[ggplot2分面时barplot柱子宽度不等时怎么办？]]></title>
+        <id>https://wangzhichao1990.github.io/post/ggplot2-fen-mian-shi-barplot-zhu-zi-kuan-du-bu-deng-shi-zen-me-ban/</id>
+        <link href="https://wangzhichao1990.github.io/post/ggplot2-fen-mian-shi-barplot-zhu-zi-kuan-du-bu-deng-shi-zen-me-ban/">
+        </link>
+        <updated>2022-12-06T05:56:29.000Z</updated>
+        <content type="html"><![CDATA[<p>柱子宽度不等</p>
+<pre><code class="language-R">library(tidyverse)
+p &lt;- ggplot(mpg, aes(class, displ)) +
+	geom_col(width = 0.7) +
+	facet_grid(~cyl, scales = &quot;free_x&quot;) +
+	theme(axis.text.x =  element_text(angle = 60, hjust = 1))
+p
+</code></pre>
+<p>结果如下：<br>
+<img src="https://wangzhichao1990.github.io/post-images/1670306855226.png" alt="" loading="lazy"></p>
+<p>参考y叔文章 <a href="https://mp.weixin.qq.com/s/72UHjAQTRXuHzoeWUc-ccA">ggplot2 - 更改分面的相对宽度</a>按比例修改分面宽度，从而保证柱子宽度相等。</p>
+<pre><code class="language-R"># 按照柱子的个数计算分面的宽度比例
+widths_df &lt;- mpg %&gt;% count(cyl, class)  %&gt;%
+	group_by(cyl) %&gt;% summarise(n=n()) %&gt;%
+	mutate(n = n/sum(n))
+widths &lt;- widths_df$n
+names(widths) &lt;- widths_df$cyl
+# 修改分面宽度
+p2 &lt;- ggtree::facet_widths(p, widths)
+p2
+</code></pre>
+<p>结果如下：<br>
+<img src="https://wangzhichao1990.github.io/post-images/1670306865289.png" alt="" loading="lazy"></p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[PacBio全长16S测序分析]]></title>
+        <id>https://wangzhichao1990.github.io/post/pacbio-quan-chang-16s-ce-xu-fen-xi/</id>
+        <link href="https://wangzhichao1990.github.io/post/pacbio-quan-chang-16s-ce-xu-fen-xi/">
+        </link>
+        <updated>2022-12-06T03:05:04.000Z</updated>
+        <content type="html"><![CDATA[<p><strong>测试数据</strong></p>
+<p>https://github.com/PacificBiosciences/DevNet/wiki/16S-Data-Set-Sequel-II-System-2.0-Release</p>
+<p><strong>引物</strong></p>
+<p>16S rRNA degenerate forward primer sequence： 5’GCATC/barcode/AGRGTTYGATYMTGGCTCAG3’</p>
+<p>16S rRNA degenerate reverse primer sequence： 5’GCATC/barcode/RGYTACCTTGTTACGACTT3</p>
+<p><strong>qiime2分析脚本</strong></p>
+<pre><code class="language-shell"># 生成manifest
+echo &quot;sample-id\tabsolute-filepath&quot; &gt;manifest
+for f in `ls *fastq`;do
+	echo &quot;sample${i}\t\$PWD/${f}&quot; &gt;&gt; manifest
+	let i++
+done
+# 导入数据
+qiime tools import \
+	--type 'SampleData[SequencesWithQuality]' 、
+	--input-path manifest \
+	--output-path raw_data.qza \
+	--input-format SingleEndFastqManifestPhred33V2
+
+# dada2分析
+qiime dada2 denoise-ccs \
+	--i-demultiplexed-seqs raw_data.qza \
+	--p-front AGRGTTYGATYMTGGCTCAG \
+	--p-adapter RGYTACCTTGTTACGACTT \
+	--p-n-threads 12 \
+	--o-table feature_table.qza \
+	--o-denoising-stats dada2_stats.qza \
+	--o-representative-sequences asv.qza
+</code></pre>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[处理gff和gtf文件的工具 - gffio]]></title>
+        <id>https://wangzhichao1990.github.io/post/chu-li-gff-he-gtf-wen-jian-de-gong-ju-gffio/</id>
+        <link href="https://wangzhichao1990.github.io/post/chu-li-gff-he-gtf-wen-jian-de-gong-ju-gffio/">
+        </link>
+        <updated>2022-12-06T02:16:13.000Z</updated>
+        <content type="html"><![CDATA[<p><a href="https://github.com/lh3/gffio">gffio</a>是李恒新写的处理gff/gtf文件的小工具。</p>
+<h2 id="gffio的功能">gffio的功能</h2>
+<ol>
+<li>gff和gtf格式相互转换</li>
+<li>转换gff/gtf为bed格式</li>
+<li>提取CDS/转录本/蛋白质序列</li>
+<li>提取最长转录本/CDS序列</li>
+</ol>
+<h2 id="简单用法">简单用法</h2>
+<pre><code class="language-shell"># install gffio
+git clone https://github.com/lh3/gffio
+cd gffio &amp;&amp; make
+
+# examples with test files
+gffio view test/hs38-gc42-part.gtf.gz &gt; out.gff       # output GFF3
+gffio view -t test/hs38-gc42-part.gtf.gz &gt; out.gtf    # output GTF
+gffio view -g test/hs38-gc42-part.gtf.gz &gt; out.gff    # group by gene/mRNA
+gffio view -L test/hs38-gc42-part.gtf.gz &gt; out.gff    # select the longest mRNA
+gffio gff2bed test/hs38-gc42-part.gtf.gz &gt; out.bed    # output BED12
+gffio gff2bed -i test/hs38-gc42-part.gtf.gz &gt; out.bed # output introns in BED6
+
+# examples without test files
+gffio gff2fa hg38.fa test/hs38-gc42-part.gtf.gz &gt; out.fa    # extract mRNA
+gffio gff2fa -p hg38.fa test/hs38-gc42-part.gtf.gz &gt; out.fa # extract proteins
+gffio gff2fa -c hg38.fa test/hs38-gc42-part.gtf.gz &gt; out.fa # extract CDS
+</code></pre>
+<h2 id="提取最长转录本cds">提取最长转录本/CDS</h2>
+<pre><code class="language-shell"># 以水稻基因组为例,下载基因组和gff文件
+wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/001/433/935/GCF_001433935.1_IRGSP-1.0/GCF_001433935.1_IRGSP-1.0_genomic.fna.gz
+wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/001/433/935/GCF_001433935.1_IRGSP-1.0/GCF_001433935.1_IRGSP-1.0_genomic.gff.gz
+# 选择最长转录本/CDS
+gffio view -L GCF_001433935.1_IRGSP-1.0_genomic.gff.gz &gt; longest.gff
+# 提取最长转录本/CDS
+gffio gff2fa longest.gff GCF_001433935.1_IRGSP-1.0_genomic.fna.gz &gt; longest.fna
+# 提取最长蛋白序列
+gffio gff2fa -p longest.gff GCF_001433935.1_IRGSP-1.0_genomic.fna.gz &gt; longest.faa
+</code></pre>
+<p>结果如下：<br>
+<img src="https://wangzhichao1990.github.io/post-images/1670292994703.png" alt="" loading="lazy"><br>
+<img src="https://wangzhichao1990.github.io/post-images/1670293001016.png" alt="" loading="lazy"></p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[PacBio测序初识]]></title>
+        <id>https://wangzhichao1990.github.io/post/pacbio-ce-xu-chu-shi/</id>
+        <link href="https://wangzhichao1990.github.io/post/pacbio-ce-xu-chu-shi/">
+        </link>
+        <updated>2022-12-01T07:39:11.000Z</updated>
+        <content type="html"><![CDATA[<h2 id="pacbio测序系统">PacBio测序系统</h2>
+<p>PacBio是唯一拥有短读长和长读长测序系统的公司，具体如下：</p>
+<ul>
+<li><a href="https://www.pacb.com/revio/">Revio long-read system</a></li>
+<li><a href="https://www.pacb.com/onso/">Onso short-read system</a></li>
+<li><a href="https://www.pacb.com/technology/hifi-sequencing/sequel-system/">Sequel long-read systems</a>
+<ul>
+<li><a href="https://www.pacb.com/technology/hifi-sequencing/products-and-services/sequel-system/latest-system-release/">Sequel IIe system release</a></li>
+<li><a href="https://www.pacb.com/technology/hifi-sequencing/products-and-services/sequel-system/previous-system-releases/">Sequel II system release</a></li>
+<li><a href="https://www.pacb.com/technology/hifi-sequencing/products-and-services/sequel-system/previous-system-releases/">Sequel system release</a></li>
+</ul>
+</li>
+</ul>
+<h2 id="两种测序模式">两种测序模式</h2>
+<ul>
+<li>Circular Consensus Sequencing(CCS)</li>
+<li>Continuous Long Read Sequencing(CLR)</li>
+</ul>
+<p><img src="https://wangzhichao1990.github.io/post-images/1669880414234.png" alt="" loading="lazy"><br>
+<img src="https://wangzhichao1990.github.io/post-images/1669880425061.png" alt="" loading="lazy"></p>
+<h2 id="如何产生hifi-reads">如何产生HiFi reads？</h2>
+<figure data-type="image" tabindex="1"><img src="https://wangzhichao1990.github.io/post-images/1669880439915.svg" alt="" loading="lazy"></figure>
+<h2 id="分析工具">分析工具</h2>
+<p>主要是<a href="https://www.pacb.com/support/software-downloads/">SMRT LINK</a>软件，包含了许多命令行工具，具体链接如下：</p>
+<ol>
+<li><a href="https://www.pacb.com/products-and-services/data-analysis/analysis-software/">分析软件</a></li>
+<li><a href="https://www.pacb.com/products-and-services/analytical-software/open-source-tools/">开源工具</a></li>
+</ol>
+<p>一些分析工具也可以使用bioconda安装，具体见<a href="https://github.com/PacificBiosciences/pbbioconda">pbbioconda</a>。</p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[R中数据框按行操作的几种方法]]></title>
+        <id>https://wangzhichao1990.github.io/post/r-zhong-shu-ju-kuang-an-xing-cao-zuo-de-ji-chong-fang-fa/</id>
+        <link href="https://wangzhichao1990.github.io/post/r-zhong-shu-ju-kuang-an-xing-cao-zuo-de-ji-chong-fang-fa/">
+        </link>
+        <updated>2022-11-29T04:21:20.000Z</updated>
+        <content type="html"><![CDATA[<h2 id="循环">循环</h2>
+<pre><code class="language-R">library(tidyverse)
+
+data &lt;- iris %&gt;% as_tibble()
+
+sum &lt;- vector(mode = &quot;numeric&quot;, length = nrow(data))
+
+# 使用循环迭代行
+for (i in seq_len(nrow(data))) {
+    sum[[i]] &lt;- sum(data[i, 1:4])
+}
+data %&gt;% mutate(sum = sum)
+</code></pre>
+<h2 id="按行操作函数">按行操作函数</h2>
+<ul>
+<li>rowSums</li>
+<li>rowMeans</li>
+<li>自定义函数，第一个参数是数字型或逻辑型数组(二维或更多维)或数据框</li>
+</ul>
+<p>可以配合<code>across</code>使用，across返回一个数据框。</p>
+<pre><code class="language-R"># rowSums + across
+data %&gt;% mutate(sum = rowSums(across(where(is.numeric))))
+
+# 自定义函数，按行操作包含在函数中
+rowMySums &lt;- function(x) {
+    sum &lt;- vector(mode = &quot;numeric&quot;, length = nrow(x))
+    for (i in seq_len(nrow(x))) {
+        sum[[i]] &lt;- sum(x[i, ])
+    }
+    sum
+}
+data %&gt;% mutate(sum = rowMySums(across(where(is.numeric))))
+</code></pre>
+<h2 id="rowwise-和-c_arcoss"><code>rowwise</code> 和 <code>c_arcoss</code></h2>
+<pre><code class="language-R">data %&gt;% rowwise() %&gt;% mutate(sum = sum(c_across(where(is.numeric))))
+</code></pre>
+<h2 id="apply函数或map函数"><code>apply</code>函数或<code>map</code>函数</h2>
+<pre><code class="language-R">data %&gt;% mutate(sum = pmap_dbl(
+    data %&gt;% select(where(is.numeric)),
+    ~ sum(c(...))
+))
+# 或者
+data %&gt;% mutate(sum = pmap_dbl(
+    across(where(is.numeric)),
+    ~ sum(c(...))
+))
+</code></pre>
+]]></content>
+    </entry>
+</feed>

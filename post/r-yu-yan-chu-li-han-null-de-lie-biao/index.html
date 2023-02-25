@@ -1,0 +1,202 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    
+<meta charset="utf-8" >
+
+<title>R语言处理含NULL的列表 | 超哥的博客</title>
+<meta name="description" content="欢迎来到我的小站呀，很高兴遇见你！❤️❤️❤️">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.7.0/animate.min.css">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://wangzhichao1990.github.io/favicon.ico?v=1677293180209">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://wangzhichao1990.github.io/styles/main.css">
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+
+
+
+  </head>
+  <body>
+    <div id="app" class="main">
+      <div class="site-header-container">
+  <div class="site-header">
+    <div class="left">
+      <a href="https://wangzhichao1990.github.io">
+        <img class="avatar" src="https://wangzhichao1990.github.io/images/avatar.png?v=1677293180209" alt="" width="32px" height="32px">
+      </a>
+      <a href="https://wangzhichao1990.github.io">
+        <h1 class="site-title">超哥的博客</h1>
+      </a>
+    </div>
+    <div class="right">
+      <transition name="fade">
+        <i class="icon" :class="{ 'icon-close-outline': menuVisible, 'icon-menu-outline': !menuVisible }" @click="menuVisible = !menuVisible"></i>
+      </transition>
+    </div>
+  </div>
+</div>
+
+<transition name="fade">
+  <div class="menu-container" style="display: none;" v-show="menuVisible">
+    <div class="menu-list">
+      
+        
+          <a href="/" class="menu purple-link">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="menu purple-link">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="menu purple-link">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="menu purple-link">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+</transition>
+
+
+      <div class="content-container">
+        <div class="post-detail">
+          
+          <h2 class="post-title">R语言处理含NULL的列表</h2>
+          <div class="post-info post-detail-info">
+            <span><i class="icon-calendar-outline"></i> 2022-11-12</span>
+            
+              <span>
+                <i class="icon-pricetags-outline"></i>
+                
+                  <a href="https://wangzhichao1990.github.io/tag/fY3hnBYFu5/">
+                    R
+                    
+                  </a>
+                
+              </span>
+            
+          </div>
+          <div class="post-content" v-pre>
+            <p>直接定义含<code>NULL</code>的列表和通过<code>apply</code>或<code>map</code>函数生成的含NULL的列表，NULL元素不会自动消失。</p>
+<h2 id="直接定义含null的列表">直接定义含<code>NULL</code>的列表</h2>
+<pre><code class="language-{R}">l &lt;- list(a = 1:2, b = NULL)
+l # NULL元素不会自动消失
+l$b &lt;- NULL #可以通过赋值NULL删除该元素
+l
+</code></pre>
+<figure data-type="image" tabindex="1"><img src="https://wangzhichao1990.github.io/post-images/1668228934361.png" alt="" loading="lazy"></figure>
+<h2 id="通过apply或map函数生成的含null的列表">通过<code>apply</code>或<code>map</code>函数生成的含NULL的列表</h2>
+<pre><code class="language-{R}">f &lt;- function(x) {
+    if (x %% 2 == 0) {
+        NULL
+    } else {
+        x
+    }
+}
+
+l &lt;- lapply(1:4, f) # 或者 l &lt;- map(1:4, f)
+
+l
+</code></pre>
+<figure data-type="image" tabindex="2"><img src="https://wangzhichao1990.github.io/post-images/1668229230079.png" alt="" loading="lazy"></figure>
+<h2 id="处理方法">处理方法</h2>
+<h3 id="方法1循环">方法1：循环</h3>
+<p>只能按照列表名称循环，不能按照整数索引循环，因为列表在循环过程中会变短。</p>
+<pre><code class="language-{R}"># 没名字的列表先添加名称
+names(l) &lt;- seq_along(l)
+for (nm in names(l)) {
+    if (is.null(l[[nm]])) {
+        l[[nm]] &lt;- NULL
+    }
+}
+l
+</code></pre>
+<figure data-type="image" tabindex="3"><img src="https://wangzhichao1990.github.io/post-images/1668241000534.png" alt="" loading="lazy"></figure>
+<h3 id="方法2filter函数">方法2：<code>Filter</code>函数</h3>
+<pre><code class="language-{R}">Filter(length, l)
+</code></pre>
+<figure data-type="image" tabindex="4"><img src="https://wangzhichao1990.github.io/post-images/1668241088589.png" alt="" loading="lazy"></figure>
+<h3 id="方法3purrrdiscard或者purrrkeep函数">方法3：<code>purrr::discard</code>或者<code>purrr::keep</code>函数</h3>
+<pre><code class="language-{R}">purrr::discard(l, is.null)
+# 或
+purrr::keep(l, ~ !is.null(.x))
+</code></pre>
+<figure data-type="image" tabindex="5"><img src="https://wangzhichao1990.github.io/post-images/1668241224480.png" alt="" loading="lazy"></figure>
+<h3 id="方法4purrrcompact函数">方法4：<code>purrr::compact</code>函数</h3>
+<pre><code class="language-{R}">purrr::compact(l)
+</code></pre>
+<figure data-type="image" tabindex="6"><img src="https://wangzhichao1990.github.io/post-images/1668241555432.png" alt="" loading="lazy"></figure>
+
+          </div>
+        </div>
+
+        
+          <div class="next-post">
+            <a class="purple-link" href="https://wangzhichao1990.github.io/post/r-yu-yan-bu-deng-chang-lie-biao-zhuan-huan-wei-shu-ju-kuang/">
+              <h3 class="post-title">
+                下一篇：R语言不等长列表转换为数据框
+              </h3>
+            </a>
+          </div>
+          
+      </div>
+
+      
+
+      <div class="site-footer">
+  <div class="slogan">欢迎来到我的小站呀，很高兴遇见你！❤️❤️❤️</div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://wangzhichao1990.github.io/atom.xml" target="_blank">RSS</a>
+</div>
+
+
+    </div>
+    <script type="application/javascript">
+
+hljs.initHighlightingOnLoad()
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+  </body>
+</html>

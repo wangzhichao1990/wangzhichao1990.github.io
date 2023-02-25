@@ -1,0 +1,196 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    
+<meta charset="utf-8" >
+
+<title>PacBio全长16S测序分析 | 超哥的博客</title>
+<meta name="description" content="欢迎来到我的小站呀，很高兴遇见你！❤️❤️❤️">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.7.0/animate.min.css">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://wangzhichao1990.github.io/favicon.ico?v=1677293180209">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://wangzhichao1990.github.io/styles/main.css">
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+
+
+
+  </head>
+  <body>
+    <div id="app" class="main">
+      <div class="site-header-container">
+  <div class="site-header">
+    <div class="left">
+      <a href="https://wangzhichao1990.github.io">
+        <img class="avatar" src="https://wangzhichao1990.github.io/images/avatar.png?v=1677293180209" alt="" width="32px" height="32px">
+      </a>
+      <a href="https://wangzhichao1990.github.io">
+        <h1 class="site-title">超哥的博客</h1>
+      </a>
+    </div>
+    <div class="right">
+      <transition name="fade">
+        <i class="icon" :class="{ 'icon-close-outline': menuVisible, 'icon-menu-outline': !menuVisible }" @click="menuVisible = !menuVisible"></i>
+      </transition>
+    </div>
+  </div>
+</div>
+
+<transition name="fade">
+  <div class="menu-container" style="display: none;" v-show="menuVisible">
+    <div class="menu-list">
+      
+        
+          <a href="/" class="menu purple-link">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="menu purple-link">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="menu purple-link">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="menu purple-link">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+</transition>
+
+
+      <div class="content-container">
+        <div class="post-detail">
+          
+          <h2 class="post-title">PacBio全长16S测序分析</h2>
+          <div class="post-info post-detail-info">
+            <span><i class="icon-calendar-outline"></i> 2022-12-06</span>
+            
+              <span>
+                <i class="icon-pricetags-outline"></i>
+                
+                  <a href="https://wangzhichao1990.github.io/tag/ZWSyH8uJii/">
+                    PacBio
+                    
+                      ，
+                    
+                  </a>
+                
+                  <a href="https://wangzhichao1990.github.io/tag/y_lci0t3TZ/">
+                    full-length 16S
+                    
+                      ，
+                    
+                  </a>
+                
+                  <a href="https://wangzhichao1990.github.io/tag/yBiznUDEnZ/">
+                    qiime2
+                    
+                  </a>
+                
+              </span>
+            
+          </div>
+          <div class="post-content" v-pre>
+            <p><strong>测试数据</strong></p>
+<p>https://github.com/PacificBiosciences/DevNet/wiki/16S-Data-Set-Sequel-II-System-2.0-Release</p>
+<p><strong>引物</strong></p>
+<p>16S rRNA degenerate forward primer sequence： 5’GCATC/barcode/AGRGTTYGATYMTGGCTCAG3’</p>
+<p>16S rRNA degenerate reverse primer sequence： 5’GCATC/barcode/RGYTACCTTGTTACGACTT3</p>
+<p><strong>qiime2分析脚本</strong></p>
+<pre><code class="language-shell"># 生成manifest
+echo &quot;sample-id\tabsolute-filepath&quot; &gt;manifest
+for f in `ls *fastq`;do
+	echo &quot;sample${i}\t\$PWD/${f}&quot; &gt;&gt; manifest
+	let i++
+done
+# 导入数据
+qiime tools import \
+	--type 'SampleData[SequencesWithQuality]' 、
+	--input-path manifest \
+	--output-path raw_data.qza \
+	--input-format SingleEndFastqManifestPhred33V2
+
+# dada2分析
+qiime dada2 denoise-ccs \
+	--i-demultiplexed-seqs raw_data.qza \
+	--p-front AGRGTTYGATYMTGGCTCAG \
+	--p-adapter RGYTACCTTGTTACGACTT \
+	--p-n-threads 12 \
+	--o-table feature_table.qza \
+	--o-denoising-stats dada2_stats.qza \
+	--o-representative-sequences asv.qza
+</code></pre>
+
+          </div>
+        </div>
+
+        
+          <div class="next-post">
+            <a class="purple-link" href="https://wangzhichao1990.github.io/post/chu-li-gff-he-gtf-wen-jian-de-gong-ju-gffio/">
+              <h3 class="post-title">
+                下一篇：处理gff和gtf文件的工具 - gffio
+              </h3>
+            </a>
+          </div>
+          
+      </div>
+
+      
+
+      <div class="site-footer">
+  <div class="slogan">欢迎来到我的小站呀，很高兴遇见你！❤️❤️❤️</div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://wangzhichao1990.github.io/atom.xml" target="_blank">RSS</a>
+</div>
+
+
+    </div>
+    <script type="application/javascript">
+
+hljs.initHighlightingOnLoad()
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,243 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    
+<meta charset="utf-8" >
+
+<title>单菌的Illumina双端数据组装 | 超哥的博客</title>
+<meta name="description" content="欢迎来到我的小站呀，很高兴遇见你！❤️❤️❤️">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.7.0/animate.min.css">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://wangzhichao1990.github.io/favicon.ico?v=1677293180209">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://wangzhichao1990.github.io/styles/main.css">
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+
+
+
+  </head>
+  <body>
+    <div id="app" class="main">
+      <div class="site-header-container">
+  <div class="site-header">
+    <div class="left">
+      <a href="https://wangzhichao1990.github.io">
+        <img class="avatar" src="https://wangzhichao1990.github.io/images/avatar.png?v=1677293180209" alt="" width="32px" height="32px">
+      </a>
+      <a href="https://wangzhichao1990.github.io">
+        <h1 class="site-title">超哥的博客</h1>
+      </a>
+    </div>
+    <div class="right">
+      <transition name="fade">
+        <i class="icon" :class="{ 'icon-close-outline': menuVisible, 'icon-menu-outline': !menuVisible }" @click="menuVisible = !menuVisible"></i>
+      </transition>
+    </div>
+  </div>
+</div>
+
+<transition name="fade">
+  <div class="menu-container" style="display: none;" v-show="menuVisible">
+    <div class="menu-list">
+      
+        
+          <a href="/" class="menu purple-link">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="menu purple-link">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="menu purple-link">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="menu purple-link">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+</transition>
+
+
+      <div class="content-container">
+        <div class="post-detail">
+          
+          <h2 class="post-title">单菌的Illumina双端数据组装</h2>
+          <div class="post-info post-detail-info">
+            <span><i class="icon-calendar-outline"></i> 2022-11-24</span>
+            
+              <span>
+                <i class="icon-pricetags-outline"></i>
+                
+                  <a href="https://wangzhichao1990.github.io/tag/Y4O9bj5ur71/">
+                    细菌基因组组装
+                    
+                      ，
+                    
+                  </a>
+                
+                  <a href="https://wangzhichao1990.github.io/tag/1xr8dAKvxhW/">
+                    shovill
+                    
+                  </a>
+                
+              </span>
+            
+          </div>
+          <div class="post-content" v-pre>
+            <p>推荐<a href="https://github.com/tseemann/shovill">shovill</a>软件组装，主要过程如下：</p>
+<ol>
+<li>从reads中估计基因组大小和DNA片段长度(要提供--gsize参数);</li>
+<li>使用<a href="https://github.com/lh3/seqtk">seqtk</a>将fastq文件缩减到合理的测序深度(默认--depth 100);</li>
+<li>使用<a href="http://www.usadellab.org/cms/?page=trimmomatic">Trimmomatic</a>去除序列中的接头序列(要加--trim参数);</li>
+<li>使用<a href="https://github.com/mourisl/Lighter">Lighter</a>保守地修正reads中的测序错误；</li>
+<li>使用<a href="https://ccb.jhu.edu/software/FLASH/">FLASh</a>将重叠的双端read合并到一起，其他的仍然保留，这可以提高组装的准确度;</li>
+<li>将上步得到的双端reads和长的单端reads使用<a href="http://cab.spbu.ru/software/spades/">SPAdes</a>、<a href="https://github.com/ncbi/SKESA/releases">SKESA</a>、<a href="https://github.com/voutcn/megahit/releases">Megahit</a>和<a href="https://www.ebi.ac.uk/~zerbino/velvet/">velvet</a>组装，k-mer设置一个合理的范围;</li>
+<li>将reads比对回contigs上，并使用<a href="https://github.com/broadinstitute/pilon/releases/">Pilon</a>以修正小的组装错误;</li>
+<li>去除太短的，覆盖度太低的contigs和纯的均聚物;</li>
+<li>最后生成最终的contigs文件，序列名称可自定义，并且带有易解析的注释。</li>
+</ol>
+<h2 id="软件安装">软件安装</h2>
+<pre><code class="language-{shell}">mamba install shovill
+</code></pre>
+<h2 id="软件使用">软件使用</h2>
+<pre><code>time shovill --depth 0 \
+    --R1 R1.fq.gz \
+    --R2 R2.fq.gz \
+    --outdir test \
+    --minlen 200 --keepfiles \
+    --cpus 12 --assembler skesa
+</code></pre>
+<p>结果如下：<br>
+<img src="https://wangzhichao1990.github.io/post-images/1669274812156.png" alt="" loading="lazy"><br>
+查看<code>contigs.fa</code><br>
+<img src="https://wangzhichao1990.github.io/post-images/1669275085408.png" alt="" loading="lazy"></p>
+<h2 id="结果解读">结果解读</h2>
+<table>
+<thead>
+<tr>
+<th>Filename</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>contigs.fa</code></td>
+<td>The final assembly you should use</td>
+</tr>
+<tr>
+<td><code>shovill.log</code></td>
+<td>Full log file for bug reporting</td>
+</tr>
+<tr>
+<td><code>shovill.corrections</code></td>
+<td>List of post-assembly corrections</td>
+</tr>
+<tr>
+<td><code>contigs.gfa</code></td>
+<td>Assembly graph (spades)</td>
+</tr>
+<tr>
+<td><code>contigs.fastg</code></td>
+<td>Assembly graph (megahit)</td>
+</tr>
+<tr>
+<td><code>contigs.LastGraph</code></td>
+<td>Assembly graph (velvet)</td>
+</tr>
+<tr>
+<td><code>skesa.fasta</code></td>
+<td>Raw assembly (skesa)</td>
+</tr>
+<tr>
+<td><code>spades.fasta</code></td>
+<td>Raw assembled contigs (spades)</td>
+</tr>
+<tr>
+<td><code>megahit.fasta</code></td>
+<td>Raw assembly (megahit)</td>
+</tr>
+<tr>
+<td><code>velvet.fasta</code></td>
+<td>Raw assembly (velvet)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="组装结果统计">组装结果统计</h2>
+<pre><code class="language-{shell}">pyfastx stat contigs.fa
+</code></pre>
+<p>结果如下：<br>
+<img src="https://wangzhichao1990.github.io/post-images/1669275000363.png" alt="" loading="lazy"></p>
+
+          </div>
+        </div>
+
+        
+          <div class="next-post">
+            <a class="purple-link" href="https://wangzhichao1990.github.io/post/bioconductor-zhong-de-xvector/">
+              <h3 class="post-title">
+                下一篇：Bioconductor中的XVector
+              </h3>
+            </a>
+          </div>
+          
+      </div>
+
+      
+
+      <div class="site-footer">
+  <div class="slogan">欢迎来到我的小站呀，很高兴遇见你！❤️❤️❤️</div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://wangzhichao1990.github.io/atom.xml" target="_blank">RSS</a>
+</div>
+
+
+    </div>
+    <script type="application/javascript">
+
+hljs.initHighlightingOnLoad()
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+  </body>
+</html>

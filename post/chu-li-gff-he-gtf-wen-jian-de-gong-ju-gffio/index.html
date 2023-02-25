@@ -1,0 +1,200 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    
+<meta charset="utf-8" >
+
+<title>处理gff和gtf文件的工具 - gffio | 超哥的博客</title>
+<meta name="description" content="欢迎来到我的小站呀，很高兴遇见你！❤️❤️❤️">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.7.0/animate.min.css">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://wangzhichao1990.github.io/favicon.ico?v=1677293180209">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://wangzhichao1990.github.io/styles/main.css">
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+
+
+
+  </head>
+  <body>
+    <div id="app" class="main">
+      <div class="site-header-container">
+  <div class="site-header">
+    <div class="left">
+      <a href="https://wangzhichao1990.github.io">
+        <img class="avatar" src="https://wangzhichao1990.github.io/images/avatar.png?v=1677293180209" alt="" width="32px" height="32px">
+      </a>
+      <a href="https://wangzhichao1990.github.io">
+        <h1 class="site-title">超哥的博客</h1>
+      </a>
+    </div>
+    <div class="right">
+      <transition name="fade">
+        <i class="icon" :class="{ 'icon-close-outline': menuVisible, 'icon-menu-outline': !menuVisible }" @click="menuVisible = !menuVisible"></i>
+      </transition>
+    </div>
+  </div>
+</div>
+
+<transition name="fade">
+  <div class="menu-container" style="display: none;" v-show="menuVisible">
+    <div class="menu-list">
+      
+        
+          <a href="/" class="menu purple-link">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="menu purple-link">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="menu purple-link">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="menu purple-link">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+</transition>
+
+
+      <div class="content-container">
+        <div class="post-detail">
+          
+          <h2 class="post-title">处理gff和gtf文件的工具 - gffio</h2>
+          <div class="post-info post-detail-info">
+            <span><i class="icon-calendar-outline"></i> 2022-12-06</span>
+            
+              <span>
+                <i class="icon-pricetags-outline"></i>
+                
+                  <a href="https://wangzhichao1990.github.io/tag/EhIWA9kd6P/">
+                    gtf
+                    
+                      ，
+                    
+                  </a>
+                
+                  <a href="https://wangzhichao1990.github.io/tag/Ddt6-N7MPU/">
+                    gff
+                    
+                  </a>
+                
+              </span>
+            
+          </div>
+          <div class="post-content" v-pre>
+            <p><a href="https://github.com/lh3/gffio">gffio</a>是李恒新写的处理gff/gtf文件的小工具。</p>
+<h2 id="gffio的功能">gffio的功能</h2>
+<ol>
+<li>gff和gtf格式相互转换</li>
+<li>转换gff/gtf为bed格式</li>
+<li>提取CDS/转录本/蛋白质序列</li>
+<li>提取最长转录本/CDS序列</li>
+</ol>
+<h2 id="简单用法">简单用法</h2>
+<pre><code class="language-shell"># install gffio
+git clone https://github.com/lh3/gffio
+cd gffio &amp;&amp; make
+
+# examples with test files
+gffio view test/hs38-gc42-part.gtf.gz &gt; out.gff       # output GFF3
+gffio view -t test/hs38-gc42-part.gtf.gz &gt; out.gtf    # output GTF
+gffio view -g test/hs38-gc42-part.gtf.gz &gt; out.gff    # group by gene/mRNA
+gffio view -L test/hs38-gc42-part.gtf.gz &gt; out.gff    # select the longest mRNA
+gffio gff2bed test/hs38-gc42-part.gtf.gz &gt; out.bed    # output BED12
+gffio gff2bed -i test/hs38-gc42-part.gtf.gz &gt; out.bed # output introns in BED6
+
+# examples without test files
+gffio gff2fa hg38.fa test/hs38-gc42-part.gtf.gz &gt; out.fa    # extract mRNA
+gffio gff2fa -p hg38.fa test/hs38-gc42-part.gtf.gz &gt; out.fa # extract proteins
+gffio gff2fa -c hg38.fa test/hs38-gc42-part.gtf.gz &gt; out.fa # extract CDS
+</code></pre>
+<h2 id="提取最长转录本cds">提取最长转录本/CDS</h2>
+<pre><code class="language-shell"># 以水稻基因组为例,下载基因组和gff文件
+wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/001/433/935/GCF_001433935.1_IRGSP-1.0/GCF_001433935.1_IRGSP-1.0_genomic.fna.gz
+wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/001/433/935/GCF_001433935.1_IRGSP-1.0/GCF_001433935.1_IRGSP-1.0_genomic.gff.gz
+# 选择最长转录本/CDS
+gffio view -L GCF_001433935.1_IRGSP-1.0_genomic.gff.gz &gt; longest.gff
+# 提取最长转录本/CDS
+gffio gff2fa longest.gff GCF_001433935.1_IRGSP-1.0_genomic.fna.gz &gt; longest.fna
+# 提取最长蛋白序列
+gffio gff2fa -p longest.gff GCF_001433935.1_IRGSP-1.0_genomic.fna.gz &gt; longest.faa
+</code></pre>
+<p>结果如下：<br>
+<img src="https://wangzhichao1990.github.io/post-images/1670292994703.png" alt="" loading="lazy"><br>
+<img src="https://wangzhichao1990.github.io/post-images/1670293001016.png" alt="" loading="lazy"></p>
+
+          </div>
+        </div>
+
+        
+          <div class="next-post">
+            <a class="purple-link" href="https://wangzhichao1990.github.io/post/pacbio-ce-xu-chu-shi/">
+              <h3 class="post-title">
+                下一篇：PacBio测序初识
+              </h3>
+            </a>
+          </div>
+          
+      </div>
+
+      
+
+      <div class="site-footer">
+  <div class="slogan">欢迎来到我的小站呀，很高兴遇见你！❤️❤️❤️</div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://wangzhichao1990.github.io/atom.xml" target="_blank">RSS</a>
+</div>
+
+
+    </div>
+    <script type="application/javascript">
+
+hljs.initHighlightingOnLoad()
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+  </body>
+</html>

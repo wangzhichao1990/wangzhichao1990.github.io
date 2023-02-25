@@ -1,0 +1,211 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    
+<meta charset="utf-8" >
+
+<title>两个特征矩阵变量关联分析/相关性分析 | 超哥的博客</title>
+<meta name="description" content="欢迎来到我的小站呀，很高兴遇见你！❤️❤️❤️">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.7.0/animate.min.css">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://wangzhichao1990.github.io/favicon.ico?v=1677293180209">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://wangzhichao1990.github.io/styles/main.css">
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+
+
+
+  </head>
+  <body>
+    <div id="app" class="main">
+      <div class="site-header-container">
+  <div class="site-header">
+    <div class="left">
+      <a href="https://wangzhichao1990.github.io">
+        <img class="avatar" src="https://wangzhichao1990.github.io/images/avatar.png?v=1677293180209" alt="" width="32px" height="32px">
+      </a>
+      <a href="https://wangzhichao1990.github.io">
+        <h1 class="site-title">超哥的博客</h1>
+      </a>
+    </div>
+    <div class="right">
+      <transition name="fade">
+        <i class="icon" :class="{ 'icon-close-outline': menuVisible, 'icon-menu-outline': !menuVisible }" @click="menuVisible = !menuVisible"></i>
+      </transition>
+    </div>
+  </div>
+</div>
+
+<transition name="fade">
+  <div class="menu-container" style="display: none;" v-show="menuVisible">
+    <div class="menu-list">
+      
+        
+          <a href="/" class="menu purple-link">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="menu purple-link">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="menu purple-link">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="menu purple-link">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+</transition>
+
+
+      <div class="content-container">
+        <div class="post-detail">
+          
+          <h2 class="post-title">两个特征矩阵变量关联分析/相关性分析</h2>
+          <div class="post-info post-detail-info">
+            <span><i class="icon-calendar-outline"></i> 2023-02-14</span>
+            
+              <span>
+                <i class="icon-pricetags-outline"></i>
+                
+                  <a href="https://wangzhichao1990.github.io/tag/XtJxwuop4/">
+                    相关性分析
+                    
+                      ，
+                    
+                  </a>
+                
+                  <a href="https://wangzhichao1990.github.io/tag/_euhEhLOIJ/">
+                    关联分析
+                    
+                  </a>
+                
+              </span>
+            
+          </div>
+          <div class="post-content" v-pre>
+            <pre><code class="language-{R}">library(tidyverse)
+library(pheatmap)
+# 生成两个特征矩阵
+set.seed(123)
+gene_matrix &lt;- matrix(runif(100, 50, 100), nrow = 10) %&gt;% as.data.frame()
+
+rownames(gene_matrix) &lt;- paste0(&quot;Sample&quot;, 1:10)
+colnames(gene_matrix) &lt;- paste0(&quot;Gene&quot;, 1:10)
+
+other_matrix &lt;- matrix(runif(50, 10, 20), nrow = 10) %&gt;% as.data.frame()
+rownames(other_matrix) &lt;- paste0(&quot;Sample&quot;, 1:10)
+
+
+# 根据p值生成显著性标记
+change2sigstar &lt;- function(x){
+  if (x &lt;= 0.001) {
+    &quot;***&quot; 
+  } else if (x &lt;= 0.05) {
+    &quot;*&quot;
+  } else {
+    &quot;&quot;
+  }
+}
+
+# 计算相关系数
+cor &lt;- cor(gene_matrix, other_matrix)
+
+# 相关性检验生成p值
+cor_pvalue &lt;- map_df(gene_matrix, ~ map_df(other_matrix, function(x) cor.test(.x, x) %&gt;% .$p.value )) %&gt;% as.data.frame()
+rownames(cor_pvalue) &lt;- colnames(gene_matrix)
+
+# 生成相关性标记矩阵
+cor_sigstar &lt;- cor_pvalue %&gt;% mutate(
+  across(everything(), ~ map_chr(.x, change2sigstar))
+)
+
+# 简单绘图
+pheatmap(cor, display_numbers = cor_sigstar, fontsize_number = 20, number_color = &quot;black&quot;)
+</code></pre>
+<p>gene_matix: 基因表达矩阵。<br>
+<img src="https://wangzhichao1990.github.io/post-images/1676379598148.png" alt="" loading="lazy"></p>
+<p>other_matrix: 可以是一些临川指标等等。<br>
+<img src="https://wangzhichao1990.github.io/post-images/1676379616313.png" alt="" loading="lazy"></p>
+<p>cor: 相关系数矩阵<br>
+<img src="https://wangzhichao1990.github.io/post-images/1676379755112.png" alt="" loading="lazy"></p>
+<p>cor_pvalue: 相关性检测p值矩阵<br>
+<img src="https://wangzhichao1990.github.io/post-images/1676379781603.png" alt="" loading="lazy"></p>
+<p>cor_sigstar: 相关性标记矩阵<br>
+<img src="https://wangzhichao1990.github.io/post-images/1676379831314.png" alt="" loading="lazy"></p>
+<p>相关性热图：<br>
+<img src="https://wangzhichao1990.github.io/post-images/1676379846341.png" alt="" loading="lazy"></p>
+
+          </div>
+        </div>
+
+        
+          <div class="next-post">
+            <a class="purple-link" href="https://wangzhichao1990.github.io/post/biojava-he-xin-ku-zhong-de-xu-lie-xiang-guan-lei/">
+              <h3 class="post-title">
+                下一篇：BioJava核心库中的序列相关类
+              </h3>
+            </a>
+          </div>
+          
+      </div>
+
+      
+
+      <div class="site-footer">
+  <div class="slogan">欢迎来到我的小站呀，很高兴遇见你！❤️❤️❤️</div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://wangzhichao1990.github.io/atom.xml" target="_blank">RSS</a>
+</div>
+
+
+    </div>
+    <script type="application/javascript">
+
+hljs.initHighlightingOnLoad()
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+  </body>
+</html>

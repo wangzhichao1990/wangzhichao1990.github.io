@@ -1,0 +1,204 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    
+<meta charset="utf-8" >
+
+<title>Bioconductor中的XVector | 超哥的博客</title>
+<meta name="description" content="欢迎来到我的小站呀，很高兴遇见你！❤️❤️❤️">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.7.0/animate.min.css">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://wangzhichao1990.github.io/favicon.ico?v=1677293180209">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://wangzhichao1990.github.io/styles/main.css">
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+
+
+
+  </head>
+  <body>
+    <div id="app" class="main">
+      <div class="site-header-container">
+  <div class="site-header">
+    <div class="left">
+      <a href="https://wangzhichao1990.github.io">
+        <img class="avatar" src="https://wangzhichao1990.github.io/images/avatar.png?v=1677293180209" alt="" width="32px" height="32px">
+      </a>
+      <a href="https://wangzhichao1990.github.io">
+        <h1 class="site-title">超哥的博客</h1>
+      </a>
+    </div>
+    <div class="right">
+      <transition name="fade">
+        <i class="icon" :class="{ 'icon-close-outline': menuVisible, 'icon-menu-outline': !menuVisible }" @click="menuVisible = !menuVisible"></i>
+      </transition>
+    </div>
+  </div>
+</div>
+
+<transition name="fade">
+  <div class="menu-container" style="display: none;" v-show="menuVisible">
+    <div class="menu-list">
+      
+        
+          <a href="/" class="menu purple-link">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="menu purple-link">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="menu purple-link">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="menu purple-link">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+</transition>
+
+
+      <div class="content-container">
+        <div class="post-detail">
+          
+          <h2 class="post-title">Bioconductor中的XVector</h2>
+          <div class="post-info post-detail-info">
+            <span><i class="icon-calendar-outline"></i> 2022-11-17</span>
+            
+              <span>
+                <i class="icon-pricetags-outline"></i>
+                
+                  <a href="https://wangzhichao1990.github.io/tag/FUSUjIL_0sq/">
+                    XVector
+                    
+                  </a>
+                
+              </span>
+            
+          </div>
+          <div class="post-content" v-pre>
+            <h2 id="xvector"><code>XVector</code></h2>
+<p><code>XVector</code>: 虚类，存储外部向量的通用容器，继承自<code>Vector</code>，有更丰富的接口。</p>
+<p>直接的子类有：</p>
+<ul>
+<li><code>XRaw</code>：存储external raw vector的容器(例如C语言层面的字节)</li>
+<li><code>XInteger</code>：存储external integer vector的容器(例如C语言层面的整数)</li>
+<li><code>XDouble</code>：存储external double vector的容器(例如C语言层面的浮点数)</li>
+<li><code>XString</code>：定义在<code>Biostrings</code>中的类型，一种字符串类型</li>
+</ul>
+<p>这些X*容器类型具有<code>引用传递(址传递)</code>语义，避免了提取线性子序列的复制开销。</p>
+<h3 id="接口">接口</h3>
+<p><code>XVector</code>继承自<code>Vector</code>，因此具有<code>Vector</code>的接口，并且增加了额外的子集操作：</p>
+<ol>
+<li>
+<p><code>subseq(x, start=NA, end=NA, width=NA)</code></p>
+</li>
+<li>
+<p><code>subseq(x, start=NA, end=NA, width=NA) &lt;- value</code></p>
+</li>
+<li>
+<p><code>reverse(x, ...)</code></p>
+</li>
+<li>
+<pre><code class="language-R">## S4 method for signature 'integer'
+slice(x, lower = -.Machine$integer.max, upper = .Machine$integer.max)
+## S4 method for signature 'XInteger'
+slice(x, lower = -.Machine$integer.max, upper = .Machine$integer.max)
+## S4 method for signature 'numeric'
+slice(x,
+    lower = -Inf, upper = Inf,
+    includeLower = TRUE, includeUpper = TRUE, rangesOnly = FALSE
+)
+## S4 method for signature 'XDouble'
+slice(x,
+    lower = -.Machine$double.xmax, upper = .Machine$double.xmax,
+    includeLower = TRUE, includeUpper = TRUE, rangesOnly = FALSE
+)
+</code></pre>
+</li>
+</ol>
+<h3 id="构造函数">构造函数</h3>
+<pre><code class="language-{R}">XRaw(length = 0L, val = NULL) # val为NULL时，变量未初始化
+XInteger(length = base::length(val), val = NULL)
+XDouble(length = base::length(val), val = NULL)
+XNumeric(...) # 同XDouble(...)
+</code></pre>
+<p>等价于</p>
+<pre><code class="language-R">as(val, &quot;XRaw&quot;)
+as(val, &quot;XInteger&quot;)
+as(val, &quot;XDouble&quot;)
+</code></pre>
+
+          </div>
+        </div>
+
+        
+          <div class="next-post">
+            <a class="purple-link" href="https://wangzhichao1990.github.io/post/biostrings-zhong-de-zi-fu-chuan-ji-he-dui-xiang-xstringset/">
+              <h3 class="post-title">
+                下一篇：Biostrings中的字符串集合对象XStringSet
+              </h3>
+            </a>
+          </div>
+          
+      </div>
+
+      
+
+      <div class="site-footer">
+  <div class="slogan">欢迎来到我的小站呀，很高兴遇见你！❤️❤️❤️</div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://wangzhichao1990.github.io/atom.xml" target="_blank">RSS</a>
+</div>
+
+
+    </div>
+    <script type="application/javascript">
+
+hljs.initHighlightingOnLoad()
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,383 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    
+<meta charset="utf-8" >
+
+<title>Biostrings中的字符串集合对象XStringSet | 超哥的博客</title>
+<meta name="description" content="欢迎来到我的小站呀，很高兴遇见你！❤️❤️❤️">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.7.0/animate.min.css">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://wangzhichao1990.github.io/favicon.ico?v=1677293180209">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://wangzhichao1990.github.io/styles/main.css">
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+
+
+
+  </head>
+  <body>
+    <div id="app" class="main">
+      <div class="site-header-container">
+  <div class="site-header">
+    <div class="left">
+      <a href="https://wangzhichao1990.github.io">
+        <img class="avatar" src="https://wangzhichao1990.github.io/images/avatar.png?v=1677293180209" alt="" width="32px" height="32px">
+      </a>
+      <a href="https://wangzhichao1990.github.io">
+        <h1 class="site-title">超哥的博客</h1>
+      </a>
+    </div>
+    <div class="right">
+      <transition name="fade">
+        <i class="icon" :class="{ 'icon-close-outline': menuVisible, 'icon-menu-outline': !menuVisible }" @click="menuVisible = !menuVisible"></i>
+      </transition>
+    </div>
+  </div>
+</div>
+
+<transition name="fade">
+  <div class="menu-container" style="display: none;" v-show="menuVisible">
+    <div class="menu-list">
+      
+        
+          <a href="/" class="menu purple-link">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="menu purple-link">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="menu purple-link">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="menu purple-link">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+</transition>
+
+
+      <div class="content-container">
+        <div class="post-detail">
+          
+          <h2 class="post-title">Biostrings中的字符串集合对象XStringSet</h2>
+          <div class="post-info post-detail-info">
+            <span><i class="icon-calendar-outline"></i> 2022-11-16</span>
+            
+              <span>
+                <i class="icon-pricetags-outline"></i>
+                
+                  <a href="https://wangzhichao1990.github.io/tag/OzNejqQsy9y/">
+                    Biostrings
+                    
+                      ，
+                    
+                  </a>
+                
+                  <a href="https://wangzhichao1990.github.io/tag/RVwZsiR9tCk/">
+                    XStringSet
+                    
+                  </a>
+                
+              </span>
+            
+          </div>
+          <div class="post-content" v-pre>
+            <p>XStringSet是一个虚类，不能实例化，其直接子类有BStringSet、DNAStringSet、RNAStringSet、AAStringSet，它们分别是一组BString、DNAString、RNAString、AAString对象的容器。<br>
+XStringSet有点类似R中的字符串向量或者列表。</p>
+<h2 id="泛型构造函数">泛型构造函数</h2>
+<pre><code class="language-{R}">BStringSet(x=character(), start=NA, end=NA, width=NA, use.names=TRUE)
+DNAStringSet(x=character(), start=NA, end=NA, width=NA, use.names=TRUE)
+RNAStringSet(x=character(), start=NA, end=NA, width=NA, use.names=TRUE)
+AAStringSet(x=character(), start=NA, end=NA, width=NA, use.names=TRUE)
+</code></pre>
+<p>后面3个参数类似于<code>subseq</code>中的参数，最多只能出现两个，即下面三个等价：</p>
+<pre><code class="language-{R}">BStringSet(x, start=mystart, end=myend, width=mywidth) # 效率最高
+subseq(BStringSet(x), start=mystart, end=myend, width=mywidth)
+BStringSet(subseq(x, start=mystart, end=myend, width=mywidth))
+</code></pre>
+<p>其中，start, end, width除了是单数字外，还可以是和x等长的数字向量。<br>
+需要注意的是不能越界，否则报错；end用负数最容易保证不越界。</p>
+<pre><code class="language-{R}">x0 &lt;- c(&quot;#CTC-NACCAGTAT&quot;, &quot;#TTGA&quot;, &quot;TACCTAGAG&quot;)
+# 构造BStringSet对象
+x1 &lt;- BStringSet(x0)
+# 使用start, end参数
+BStringSet(x = x0, start = 4, end = -3)
+# 等价方法1
+subseq(x1, start = 4, end = -3)
+# 等价方法2
+BStringSet(subseq(x = x0, start = 4, end = -3))
+</code></pre>
+<p><img src="https://wangzhichao1990.github.io/post-images/1668586342530.png" alt="" loading="lazy"><br>
+使用数字向量构建</p>
+<pre><code class="language-{R}">BStringSet(x = x0, start = 1:3, width = 2)
+BStringSet(x = x0, start = 1:3, end = c(12, 3, 4))
+BStringSet(x = x0, start = 1:3, width = c(1, 2,3))
+</code></pre>
+<p><img src="https://wangzhichao1990.github.io/post-images/1668586554003.png" alt="" loading="lazy"><br>
+DNAString、RNAString、AAString要保证字符符合相应的alphabet，否则报错。</p>
+<pre><code class="language-{R}">dna0 &lt;- DNAStringSet(x0, start=4, end=-3)
+dna0
+</code></pre>
+<figure data-type="image" tabindex="1"><img src="https://wangzhichao1990.github.io/post-images/1668586859202.png" alt="" loading="lazy"></figure>
+<h2 id="类似访问器方法">类似访问器方法</h2>
+<p><code>length(x)</code>: 返回返回字符串集合元素的个数。<br>
+<code>nchar(x)</code>: 向量化函数，返回元素长度组成的数字向量<br>
+<code>width(x)</code>: 同<code>nchar(x)</code></p>
+<pre><code class="language-{R}">length(dna0)
+nchar(dna0)
+width(dna0)
+</code></pre>
+<p><img src="https://wangzhichao1990.github.io/post-images/1668587105196.png" alt="" loading="lazy"><br>
+<code>names(x)</code>: 返回NULL或名称属性</p>
+<pre><code class="language-{R}">names(dna0)
+# 修改名称
+names(dna0) &lt;- paste0(&quot;Seq&quot;, 1:3)
+</code></pre>
+<p><img src="https://wangzhichao1990.github.io/post-images/1668587286911.png" alt="" loading="lazy"><br>
+<code>alphabet(x)</code>: DNAStringSet、RNAStringSet、AAStringSet返回相应的字母表, BStringSet返回NULL。</p>
+<pre><code class="language-{R}">alphabet(dna0)
+# [1] &quot;A&quot; &quot;C&quot; &quot;G&quot; &quot;T&quot; &quot;M&quot; &quot;R&quot; &quot;W&quot; &quot;S&quot; &quot;Y&quot; &quot;K&quot; &quot;V&quot; &quot;H&quot; &quot;D&quot; &quot;B&quot; &quot;N&quot; &quot;-&quot; &quot;+&quot; &quot;.&quot;
+</code></pre>
+<h2 id="提取序列子集和相关操作">提取序列子集和相关操作</h2>
+<p>下面的代码片段中，x可以是字符串向量(不含NA)、XStringSet、XStringViews对象。<br>
+<code>subseq(x, start=NA, end=NA, width=NA)</code><br>
+应用subseq到x的每个元素上，并返回x的同类对象。类似substr，但是接口更丰富，并且start和end参数支持负数，并能进行边界检查。<br>
+<code>narrow(x, start=NA, end=NA, width=NA, use.names=TRUE)</code><br>
+和subseq相同，唯一的不同是多了个use.names参数，默认为TRUE，会保留名称；subseq有名称也会保留。<br>
+<code>threebands(x, start=NA, end=NA, width=NA)</code><br>
+返回一个3个元素的列表(left, middle, right)，列表的元素和x是同类对象，其中middle元素是subseq或narrow的返回结果(没有names属性)，left和right是剩下的侧翼序列。<br>
+<code>subseq(x, start=NA, end=NA, width=NA) &lt;- value</code><br>
+subseq可以用来修改原来的字符串，注意不会修改原来字符串的长度，value会循环使用。</p>
+<pre><code class="language-{R}">x0 &lt;- c(&quot;#CTC-NACCAGTAT&quot;, &quot;#TTGA&quot;, &quot;TACCTAG
+# 构造DNAStringSet
+x1 &lt;- DNAStringSet(x0, start = 2, end = -1)
+# 添加names
+names(x1) &lt;- paste0(&quot;seq&quot;, 1:3)
+subseq(x = x1, start = 2, width =  3)
+narrow(x = x1, start =  2, end = -3, use.names = T)
+narrow(x = x1, start =  2, end = -3, use.names = F)
+threebands(x = x1, start = 1, width = 2)
+# 修改原来的字符串
+subseq(x = x1, start = 2, width =  3) &lt;- &quot;AAA&quot;
+</code></pre>
+<p><img src="https://wangzhichao1990.github.io/post-images/1668648861690.png" alt="" loading="lazy"><br>
+<img src="https://wangzhichao1990.github.io/post-images/1668648867788.png" alt="" loading="lazy"></p>
+<h2 id="索引-切片和append">索引、切片和append</h2>
+<p>同R中的向量。</p>
+<pre><code class="language-{R}">x0 &lt;- c(&quot;#CTC-NACCAGTAT&quot;, &quot;#TTGA&quot;, &quot;TACCTAGAG&quot;)
+x1 &lt;- DNAStringSet(x0, start = 2, end = -1)
+x1[1]
+x1[1:2]
+x1[[1]] # 返回单个元素
+</code></pre>
+<p><img src="https://wangzhichao1990.github.io/post-images/1668650645484.png" alt="" loading="lazy"><br>
+泛型函数append<br>
+<code>append(x, values, after=length(x))</code></p>
+<pre><code class="language-{R}"># 在after后面插入元素
+append(x = x1, values = &quot;AAA&quot;, after = 2)
+# 当after = 0时，values和x不同类时，返回一个列表
+append(x = x1, values = &quot;AAA&quot;, after = 0)
+append(x = letters[1:2], values = &quot;c&quot;, after = 0)
+append(x = 1:2, values = 3, after = 0)
+</code></pre>
+<figure data-type="image" tabindex="2"><img src="https://wangzhichao1990.github.io/post-images/1668651295465.png" alt="" loading="lazy"></figure>
+<pre><code class="language-{R}"># 在首位增加元素
+append(x = x1, values = DNAStringSet(&quot;AAA&quot;), after = 0)
+# 等价于
+c(DNAStringSet(&quot;aaaa&quot;), x1)
+</code></pre>
+<figure data-type="image" tabindex="3"><img src="https://wangzhichao1990.github.io/post-images/1668651389561.png" alt="" loading="lazy"></figure>
+<h2 id="集合操作">集合操作</h2>
+<p>同向量的集合操作</p>
+<pre><code class="language-{R}">x2 &lt;- x1[2:3]
+# 合集
+union(x1, x2)
+# 交集
+intersect(x1, x2)
+# 差集
+setdiff(x1, x2)
+# 判断是否相等
+setequal(x1, x2)
+</code></pre>
+<figure data-type="image" tabindex="4"><img src="https://wangzhichao1990.github.io/post-images/1668651771776.png" alt="" loading="lazy"></figure>
+<h2 id="其他方法">其他方法</h2>
+<p><code>unlist(x)</code>: 将XStringSet通过首尾相连转换为XString<br>
+<code>as.character(x, use.names=TRUE)</code>: 转换为字符向量，默认保留names<br>
+<code>as.factor(x)</code>: 先用as.character转换为字符向量，再转化为因子<br>
+as.matrix(x, use.names=TRUE)： x的各个元素需等长，默认保留名称<br>
+<code>toString(x)</code>: 即 toString(as.character(x))<br>
+<code>show(x)</code>：默认展示前5和后5个元素</p>
+<pre><code class="language-{R}"># 将XStringSet通过首尾相连转换为XString
+unlist(x1)
+as.character(x1)
+as.factor(x1)
+as.matrix(x2)
+toString(x1)
+show(x1)
+</code></pre>
+<figure data-type="image" tabindex="5"><img src="https://wangzhichao1990.github.io/post-images/1668652684527.png" alt="" loading="lazy"></figure>
+<h2 id="比较和排序">比较和排序</h2>
+<h3 id="比较向量化操作">比较，向量化操作</h3>
+<p>同字符串向量比较，不同的是DNA和RNA比较是，T和U认为相等。<br>
+pcompare(x, y)<br>
+x == y, x != y, x &lt;= y, x &gt;= y, x &lt; y, x &gt; y: 分别等价于 pcompare(x, y) == 0, pcompare(x, y) != 0, pcompare(x, y) &lt;= 0, pcompare(x, y) &gt;= 0, pcompare(x, y) &lt; 0, and pcompare(x,y) &gt; 0.</p>
+<pre><code class="language-{R}">x &lt;- DNAStringSet(&quot;T&quot;)
+y &lt;- RNAStringSet(&quot;U&quot;)
+x == y # 返回TRUE
+</code></pre>
+<h2 id="排序相关函数">排序相关函数</h2>
+<p>is.unsorted(x, strictly=FALSE)<br>
+order(x, decreasing=FALSE)<br>
+rank(x, ties.method=c(&quot;first&quot;, &quot;min&quot;))<br>
+sort(x, decreasing=FALSE)<br>
+同R中的向量<br>
+<img src="https://wangzhichao1990.github.io/post-images/1668654333704.png" alt="" loading="lazy"></p>
+<h2 id="判断重复项和去重">判断重复项和去重</h2>
+<p>duplicated(x)： 判断是否为重复元素，从第二个算起<br>
+unique(x) : 去重</p>
+<pre><code class="language-{R}">x2 &lt;- c(x1, x1[1], x1[1])
+duplicated(x2)
+unique(x2)
+unique(x2) == x1
+</code></pre>
+<figure data-type="image" tabindex="6"><img src="https://wangzhichao1990.github.io/post-images/1668656492240.png" alt="" loading="lazy"></figure>
+<h2 id="match和in"><code>match()</code>和<code>%in%</code></h2>
+<pre><code class="language-{r}">match(&quot;TTGA&quot;, x1)
+match(DNAStringSet(&quot;TTGA&quot;), x1)
+match(DNAString(&quot;TTGA&quot;), x1)
+&quot;TTGA&quot; %in% x1
+&quot;ttga&quot; %in% x1
+DNAString(&quot;ttga&quot;) %in% x1
+DNAStringSet(&quot;ttga&quot;) %in% x1
+</code></pre>
+<figure data-type="image" tabindex="7"><img src="https://wangzhichao1990.github.io/post-images/1668656687318.png" alt="" loading="lazy"></figure>
+<h2 id="isna及相关方法"><code>is.na()</code>及相关方法</h2>
+<p>XString及XStringSet不可能出现NA，否则构造时报错，故<br>
+is.na对于每个元素返回FALSE, anyNA返回FALSE<br>
+定义这两个函数是为了兼容性，保持接口不变。<br>
+<img src="https://wangzhichao1990.github.io/post-images/1668657035304.png" alt="" loading="lazy"></p>
+<h2 id="io操作">IO操作</h2>
+<h3 id="读取fastafastqformat参数到一个xstringset对象中">读取fasta/fastq（format参数）到一个XStringSet对象中</h3>
+<pre><code class="language-{R}">readBStringSet(filepath,
+    format = &quot;fasta&quot;,
+    nrec = -1L, skip = 0L, seek.first.rec = FALSE,
+    use.names = TRUE, with.qualities = FALSE
+)
+readDNAStringSet(filepath,
+    format = &quot;fasta&quot;,
+    nrec = -1L, skip = 0L, seek.first.rec = FALSE,
+    use.names = TRUE, with.qualities = FALSE
+)
+readRNAStringSet(filepath,
+    format = &quot;fasta&quot;,
+    nrec = -1L, skip = 0L, seek.first.rec = FALSE,
+    use.names = TRUE, with.qualities = FALSE
+)
+readAAStringSet(filepath,
+    format = &quot;fasta&quot;,
+    nrec = -1L, skip = 0L, seek.first.rec = FALSE,
+    use.names = TRUE, with.qualities = FALSE
+)
+</code></pre>
+<h3 id="提取fastafastq信息但不加载文件">提取fasta/fastq信息，但不加载文件</h3>
+<pre><code class="language-{R}">fasta.seqlengths(filepath,
+    nrec = -1L, skip = 0L, seek.first.rec = FALSE,
+    seqtype = &quot;B&quot;, use.names = TRUE
+)
+fasta.index(filepath,
+    nrec = -1L, skip = 0L, seek.first.rec = FALSE,
+    seqtype = &quot;B&quot;
+)
+fastq.seqlengths(filepath,
+    nrec = -1L, skip = 0L, seek.first.rec = FALSE
+)
+fastq.geometry(filepath,
+    nrec = -1L, skip = 0L, seek.first.rec = FALSE
+)
+</code></pre>
+<h3 id="将xstringset对象保存为fastafastq文件">将XStringSet对象保存为fasta/fastq文件</h3>
+<p>如果没有质量信息，则保存为fastq格式时，每个碱基的质量均设为&quot;;&quot;.</p>
+<pre><code class="language-{R}">writeXStringSet(x, filepath,
+    append = FALSE,
+    compress = FALSE, compression_level = NA, format = &quot;fasta&quot;, ...
+)
+</code></pre>
+<h3 id="序列化xstringset对象">序列化XStringSet对象</h3>
+<pre><code class="language-{R}">saveXStringSet(x, objname, dirpath=&quot;.&quot;, save.dups=FALSE, verbose=TRUE)
+</code></pre>
+
+          </div>
+        </div>
+
+        
+          <div class="next-post">
+            <a class="purple-link" href="https://wangzhichao1990.github.io/post/biostrings-zhong-de-zi-fu-chuan-dui-xiang-xstring/">
+              <h3 class="post-title">
+                下一篇：Biostrings中的字符串对象XString
+              </h3>
+            </a>
+          </div>
+          
+      </div>
+
+      
+
+      <div class="site-footer">
+  <div class="slogan">欢迎来到我的小站呀，很高兴遇见你！❤️❤️❤️</div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://wangzhichao1990.github.io/atom.xml" target="_blank">RSS</a>
+</div>
+
+
+    </div>
+    <script type="application/javascript">
+
+hljs.initHighlightingOnLoad()
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+  </body>
+</html>

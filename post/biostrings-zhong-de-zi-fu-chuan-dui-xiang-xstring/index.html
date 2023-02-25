@@ -1,0 +1,291 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    
+<meta charset="utf-8" >
+
+<title>Biostrings中的字符串对象XString | 超哥的博客</title>
+<meta name="description" content="欢迎来到我的小站呀，很高兴遇见你！❤️❤️❤️">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.7.0/animate.min.css">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://wangzhichao1990.github.io/favicon.ico?v=1677293180209">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://wangzhichao1990.github.io/styles/main.css">
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+
+
+
+  </head>
+  <body>
+    <div id="app" class="main">
+      <div class="site-header-container">
+  <div class="site-header">
+    <div class="left">
+      <a href="https://wangzhichao1990.github.io">
+        <img class="avatar" src="https://wangzhichao1990.github.io/images/avatar.png?v=1677293180209" alt="" width="32px" height="32px">
+      </a>
+      <a href="https://wangzhichao1990.github.io">
+        <h1 class="site-title">超哥的博客</h1>
+      </a>
+    </div>
+    <div class="right">
+      <transition name="fade">
+        <i class="icon" :class="{ 'icon-close-outline': menuVisible, 'icon-menu-outline': !menuVisible }" @click="menuVisible = !menuVisible"></i>
+      </transition>
+    </div>
+  </div>
+</div>
+
+<transition name="fade">
+  <div class="menu-container" style="display: none;" v-show="menuVisible">
+    <div class="menu-list">
+      
+        
+          <a href="/" class="menu purple-link">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="menu purple-link">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="menu purple-link">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="menu purple-link">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+</transition>
+
+
+      <div class="content-container">
+        <div class="post-detail">
+          
+          <h2 class="post-title">Biostrings中的字符串对象XString</h2>
+          <div class="post-info post-detail-info">
+            <span><i class="icon-calendar-outline"></i> 2022-11-16</span>
+            
+              <span>
+                <i class="icon-pricetags-outline"></i>
+                
+                  <a href="https://wangzhichao1990.github.io/tag/fY3hnBYFu5/">
+                    R
+                    
+                      ，
+                    
+                  </a>
+                
+                  <a href="https://wangzhichao1990.github.io/tag/OzNejqQsy9y/">
+                    Biostrings
+                    
+                      ，
+                    
+                  </a>
+                
+                  <a href="https://wangzhichao1990.github.io/tag/YhQjO-5dobE/">
+                    XString
+                    
+                      ，
+                    
+                  </a>
+                
+                  <a href="https://wangzhichao1990.github.io/tag/YM999030o-J/">
+                    RNAString
+                    
+                      ，
+                    
+                  </a>
+                
+                  <a href="https://wangzhichao1990.github.io/tag/-7g2cEAuXpx/">
+                    AAString
+                    
+                      ，
+                    
+                  </a>
+                
+                  <a href="https://wangzhichao1990.github.io/tag/PXbsqbK0A93/">
+                    DNAString
+                    
+                  </a>
+                
+              </span>
+            
+          </div>
+          <div class="post-content" v-pre>
+            <h2 id="简介">简介</h2>
+<p>XString: 虚类，不能实例化。直接子类BString, DNAString, RNAString, AAString直接派生于XString, 但是没有增加字段，类名函数就是各自的构造函数。<br>
+XString和R中的标准字符向量的2个主要不同点：</p>
+<ol>
+<li>存储在XString中的数据不会在拷贝时复制，升内存，高性能</li>
+<li>XString只能存储单个字符串(多个字符串请使用XStringSet)<br>
+XString可以看作是一个R中高效易用的字符串。</li>
+</ol>
+<h2 id="泛型构造函数">泛型构造函数</h2>
+<p>从字符串x第start个位置读取nchar个字符。<br>
+<code>Bstring(x = &quot;&quot;, start = 1, nchar = NA)</code><br>
+<code>DNAString(x = &quot;&quot;, start = 1, nchar = NA)</code><br>
+<code>RNAString(x = &quot;&quot;, start = 1, nchar = NA)</code><br>
+<code>AAString(x = &quot;&quot;, start = 1, nchar = NA)</code><br>
+BString 中的x可以是任意字符，DNAString、RNAString 、 AAString中的字符必须分别符合 DNA_ALPHABET、RNA_ALPHABET 、 AA_ALPHABET。<br>
+DNAString 中的x可以是长度为1的字符向量、BString、RNAString；RNAString 中的x可以是长度为1的字符向量、BString、DNAString。</p>
+<pre><code class="language-{R}">library(Biostrings)
+dna &lt;- DNAString(&quot;TTGAAAA-CTC-N&quot;)
+rna &lt;- RNAString(dna)
+a &lt;- AAString(&quot;MARKSLEMSIR*&quot;)
+</code></pre>
+<figure data-type="image" tabindex="1"><img src="https://wangzhichao1990.github.io/post-images/1668577008068.png" alt="" loading="lazy"></figure>
+<h2 id="属型访问方法">属型访问方法</h2>
+<p>alphabet(x)：BString返回NULL, DNAString，RNAString, AAString分别返回DNA_ALPHABET，RNA_ALPHABET, AA_ALPHABET。</p>
+<pre><code class="language-{R}">alphabet(b)
+alphabet(dna)
+alphabet(rna)
+alphabet(a)
+</code></pre>
+<p><img src="https://wangzhichao1990.github.io/post-images/1668577588596.png" alt="" loading="lazy"><br>
+length(x) 或 nchar(x) 返回XString的长度，即字符的个数。</p>
+<pre><code class="language-{R}">length(b)
+length(dna)
+length(rna)
+length(a)
+</code></pre>
+<figure data-type="image" tabindex="2"><img src="https://wangzhichao1990.github.io/post-images/1668577671950.png" alt="" loading="lazy"></figure>
+<h2 id="转换为字符串">转换为字符串</h2>
+<p>as.character(x)或toString(x)，将XString对象转换为字符向量，长度肯定为1.</p>
+<pre><code class="language-{R}">as.character(b)
+as.character(dna)
+toString(b)
+toString(dna)
+</code></pre>
+<figure data-type="image" tabindex="3"><img src="https://wangzhichao1990.github.io/post-images/1668577781640.png" alt="" loading="lazy"></figure>
+<h2 id="相等性判断">相等性判断</h2>
+<p><code>e1 == e2</code><br>
+<code>e1 != e2</code>即 <code>!(e1 == e2)</code>.<br>
+当比较RNAString和DNAString时，认为U和T相等。<br>
+非空且长度为1的字符向量可以和BSting比较，前者先转换为BSting</p>
+<pre><code class="language-{R}">b == as.character(b) # 先转换为BString再比较
+dna == as.character(dna) # 报错
+rna == as.character(rna) # 报错
+a == toString(a) # 报错
+rna == dna # 可以比较，U和T相等
+b == &quot;&quot; # 报错
+b == c(&quot;1&quot;, &quot;2&quot;) # 报错
+</code></pre>
+<figure data-type="image" tabindex="4"><img src="https://wangzhichao1990.github.io/post-images/1668581093602.png" alt="" loading="lazy"></figure>
+<h2 id="显示函数show">显示函数show</h2>
+<p>除了Bstring，字符用彩色显示，除非设置Biostrings.coloring为FALSE</p>
+<pre><code class="language-{R}">show(b)
+show(dna)
+show(rna)
+show(a)
+</code></pre>
+<figure data-type="image" tabindex="5"><img src="https://wangzhichao1990.github.io/post-images/1668578277372.png" alt="" loading="lazy"></figure>
+<h2 id="子集操作">子集操作</h2>
+<h3 id=""><code>[</code></h3>
+<p>结果仍然是相应的XString子类。</p>
+<pre><code class="language-{R}"># 索引
+dna[1]
+# 切片，从0开始不会报错，实际从1开始
+dna[0:3]
+dna[0:3] == dna[1:3]
+d[] # 即自身
+#支持负数索引，即去掉该处字符
+dna[-1]
+dna[-1] == dna[2:length(dna)]
+# 反转
+dna[length(dna):1]
+</code></pre>
+<figure data-type="image" tabindex="6"><img src="https://wangzhichao1990.github.io/post-images/1668579325090.png" alt="" loading="lazy"></figure>
+<h3 id="subseq"><code>subseq</code></h3>
+<p>官方推荐使用<code>subseq</code>提取大字符串的子集。<br>
+<code>subseq(x, start = NA, end = NA, width = NA)</code>，后面3个参数户最多出现2个，且不能出界。</p>
+<pre><code class="language-{R}">subseq(dna, start = 1, end = 3)
+subseq(dna, start = 1, width = 3)
+subseq(dna, start = 1)
+subseq(dna, end = 3)
+subseq(dna, end = 3, width = 2)
+subseq(dna)
+</code></pre>
+<figure data-type="image" tabindex="7"><img src="https://wangzhichao1990.github.io/post-images/1668581193207.png" alt="" loading="lazy"></figure>
+<h3 id="修改">修改</h3>
+<p>索引，切片和subseq可以赋值，以修改原来的对象，索引可以赋值为单个字符；切片必须赋值为相应的XString对象，长度不等时，只会使用前半部分，多出的部分丢弃，如果不够则会循环使用，并报警告。</p>
+<pre><code class="language-{R}">dna &lt;- DNAString(&quot;TTGAAAA-CTC-N&quot;)
+dna[1] &lt;- &quot;A&quot;
+dna[1:3] &lt;- DNAString(&quot;AA&quot;)
+dna[1:3] &lt;- DNAString(&quot;TTG&quot;)
+</code></pre>
+<p><img src="https://wangzhichao1990.github.io/post-images/1668580943947.png" alt="" loading="lazy"><br>
+以上可以改为subseq的形式。</p>
+
+          </div>
+        </div>
+
+        
+          <div class="next-post">
+            <a class="purple-link" href="https://wangzhichao1990.github.io/post/r-yu-yan-zhong-bu-deng-chang-fen-lie/">
+              <h3 class="post-title">
+                下一篇：R语言中不等长分列及分行
+              </h3>
+            </a>
+          </div>
+          
+      </div>
+
+      
+
+      <div class="site-footer">
+  <div class="slogan">欢迎来到我的小站呀，很高兴遇见你！❤️❤️❤️</div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://wangzhichao1990.github.io/atom.xml" target="_blank">RSS</a>
+</div>
+
+
+    </div>
+    <script type="application/javascript">
+
+hljs.initHighlightingOnLoad()
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+  </body>
+</html>

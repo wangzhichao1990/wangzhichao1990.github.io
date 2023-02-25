@@ -1,0 +1,223 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    
+<meta charset="utf-8" >
+
+<title>R语言批量建模在差异基因/微生物/Feature分析中的应用 | 超哥的博客</title>
+<meta name="description" content="欢迎来到我的小站呀，很高兴遇见你！❤️❤️❤️">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.7.0/animate.min.css">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://wangzhichao1990.github.io/favicon.ico?v=1677293180209">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://wangzhichao1990.github.io/styles/main.css">
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+
+
+
+  </head>
+  <body>
+    <div id="app" class="main">
+      <div class="site-header-container">
+  <div class="site-header">
+    <div class="left">
+      <a href="https://wangzhichao1990.github.io">
+        <img class="avatar" src="https://wangzhichao1990.github.io/images/avatar.png?v=1677293180209" alt="" width="32px" height="32px">
+      </a>
+      <a href="https://wangzhichao1990.github.io">
+        <h1 class="site-title">超哥的博客</h1>
+      </a>
+    </div>
+    <div class="right">
+      <transition name="fade">
+        <i class="icon" :class="{ 'icon-close-outline': menuVisible, 'icon-menu-outline': !menuVisible }" @click="menuVisible = !menuVisible"></i>
+      </transition>
+    </div>
+  </div>
+</div>
+
+<transition name="fade">
+  <div class="menu-container" style="display: none;" v-show="menuVisible">
+    <div class="menu-list">
+      
+        
+          <a href="/" class="menu purple-link">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="menu purple-link">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="menu purple-link">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="menu purple-link">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+</transition>
+
+
+      <div class="content-container">
+        <div class="post-detail">
+          
+          <h2 class="post-title">R语言批量建模在差异基因/微生物/Feature分析中的应用</h2>
+          <div class="post-info post-detail-info">
+            <span><i class="icon-calendar-outline"></i> 2023-02-15</span>
+            
+          </div>
+          <div class="post-content" v-pre>
+            <pre><code class="language-{R}">library(tidyverse)
+# 生成数据和metadata
+# Feature可以是基因，微生物物种等任意可分组变量
+set.seed(123)
+data &lt;- matrix(runif(1000, 50, 100), nrow = 100) %&gt;%
+  as_tibble() %&gt;%
+  set_names(paste0(&quot;Sample&quot;, 1:10)) %&gt;%
+  mutate(Feature = paste0(&quot;Feature&quot;, 1:100)) %&gt;%
+  relocate(Feature, everything())
+
+metadata &lt;- data.frame(
+  SampleID = paste0(&quot;Sample&quot;, 1:10),
+  Group = rep(c(&quot;A&quot;, &quot;B&quot;), each = 5)
+)
+
+# 用于统计建模的整洁数据
+stats_data &lt;- data %&gt;%
+  pivot_longer(
+    -Feature,
+    names_to = &quot;SampleID&quot;,
+    values_to = &quot;value&quot;
+  ) %&gt;%
+  left_join(metadata)
+
+# 批量建模
+# 方法1：使用group_modify函数
+stats_res &lt;- stats_data %&gt;%
+  group_by(Feature) %&gt;%
+  group_modify(
+    ~ broom::tidy(
+      wilcox.test(
+        value ~ Group,
+        data = .x,
+        conf.int = TRUE
+      )
+    )
+  ) %&gt;%
+  ungroup() %&gt;%
+  filter(p.value &lt; 0.05)
+
+# 方法2：使用group_nest函数
+stats_res &lt;- stats_data %&gt;%
+  group_nest(Feature) %&gt;%
+  mutate(
+    stats = map(
+      data,
+      ~ broom::tidy(
+        wilcox.test(
+          value ~ Group,
+          data = .x,
+          conf.int = TRUE
+        )
+      )
+    )
+  ) %&gt;%
+  unnest(stats) %&gt;%
+  select(-data) %&gt;%
+  filter(p.value &lt; 0.05)
+
+# 方法3：使用nest_by
+stats_res &lt;- stats_data %&gt;%
+  nest_by(Feature) %&gt;%
+  mutate(
+    stats = broom::tidy(wilcox.test(
+      value ~ Group,
+      data = data, conf.int = TRUE
+    ))
+  ) %&gt;%
+  unnest(stats) %&gt;%
+  select(-data) %&gt;%
+  filter(p.value &lt; 0.05)
+</code></pre>
+<p>data: 原始数据，如基因表达矩阵，微生物丰度矩阵等等<br>
+<img src="https://wangzhichao1990.github.io/post-images/1676449999128.png" alt="" loading="lazy"></p>
+<p>metadata: 样本分组信息<br>
+<img src="https://wangzhichao1990.github.io/post-images/1676450022906.png" alt="" loading="lazy"></p>
+<p>stats_data: 用于批量建模的整洁数据<br>
+<img src="https://wangzhichao1990.github.io/post-images/1676450052504.png" alt="" loading="lazy"></p>
+<p>stats_res: 批量建模结果，差异Feature分析结果<br>
+<img src="https://wangzhichao1990.github.io/post-images/1676450091513.png" alt="" loading="lazy"></p>
+
+          </div>
+        </div>
+
+        
+          <div class="next-post">
+            <a class="purple-link" href="https://wangzhichao1990.github.io/post/liang-ge-te-zheng-ju-zhen-bian-liang-guan-lian-fen-xi-xiang-guan-xing-fen-xi/">
+              <h3 class="post-title">
+                下一篇：两个特征矩阵变量关联分析/相关性分析
+              </h3>
+            </a>
+          </div>
+          
+      </div>
+
+      
+
+      <div class="site-footer">
+  <div class="slogan">欢迎来到我的小站呀，很高兴遇见你！❤️❤️❤️</div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://wangzhichao1990.github.io/atom.xml" target="_blank">RSS</a>
+</div>
+
+
+    </div>
+    <script type="application/javascript">
+
+hljs.initHighlightingOnLoad()
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+  </body>
+</html>
